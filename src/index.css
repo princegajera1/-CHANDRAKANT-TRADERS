@@ -1,0 +1,558 @@
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Inter:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400;1,500&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-primary: #080C14;
+  --bg-secondary: #0D1220;
+  --bg-card: #111827;
+  
+  --font-heading: 'Barlow Condensed', sans-serif;
+  --font-body: 'Inter', sans-serif;
+
+  /* FONT SIZES */
+  --fs-page-heading: 1.75rem;
+  --fs-page-subheading: 0.78rem;
+  --fs-section-heading: 1.1rem;
+  --fs-card-title: 0.9rem;
+  --fs-card-val: 1.6rem;
+  --fs-card-label: 0.65rem;
+  --fs-table-th: 0.68rem;
+  --fs-table-td: 0.875rem;
+  --fs-table-td-important: 0.9rem;
+  --fs-btn: 0.75rem;
+  --fs-nav-label: 0.72rem;
+  --fs-badge: 0.65rem;
+  --fs-helper: 0.78rem;
+  --fs-modal-heading: 1.3rem;
+  --fs-form-label: 0.68rem;
+  --fs-form-input: 0.875rem;
+  --fs-toast: 0.82rem;
+  --fs-footer: 0.68rem;
+
+  /* FONT WEIGHTS */
+  --fw-page-heading: 800;
+  --fw-page-subheading: 400;
+  --fw-section-heading: 700;
+  --fw-card-title: 700;
+  --fw-card-val: 700;
+  --fw-card-label: 600;
+  --fw-table-th: 600;
+  --fw-table-td: 400;
+  --fw-table-td-important: 600;
+  --fw-btn: 700;
+  --fw-nav-inactive: 600;
+  --fw-nav-active: 700;
+  --fw-badge: 700;
+  --fw-modal-heading: 800;
+  --fw-form-label: 600;
+  --fw-form-input: 400;
+
+  /* LETTER SPACING */
+  --ls-page-heading: 0.02em;
+  --ls-section-heading: 0.02em;
+  --ls-card-label: 0.16em;
+  --ls-table-th: 0.16em;
+  --ls-btn: 0.14em;
+  --ls-nav-label: 0.12em;
+  --ls-badge: 0.14em;
+  --ls-body: 0em;
+  --ls-form-label: 0.14em;
+
+  /* LINE HEIGHT */
+  --lh-heading: 1.1;
+  --lh-body: 1.65;
+  --lh-label: 1.2;
+  --lh-card-val: 1.0;
+  --lh-btn: 1.0;
+
+  /* COLORS */
+  --c-primary-heading: rgba(255, 255, 255, 1);
+  --c-secondary-heading: rgba(255, 255, 255, 0.4);
+  --c-card-val: rgba(255, 255, 255, 1);
+  --c-card-label: rgba(255, 255, 255, 0.42);
+  --c-table-th: rgba(255, 255, 255, 0.38);
+  --c-table-td: rgba(255, 255, 255, 0.78);
+  --c-table-td-important: rgba(255, 255, 255, 1);
+  --c-orange: #FF6A00;
+  --c-muted: rgba(255, 255, 255, 0.32);
+  --c-nav-inactive: rgba(255, 255, 255, 0.52);
+  --c-nav-active: rgba(255, 255, 255, 1);
+  --c-form-label: rgba(255, 255, 255, 0.5);
+  --c-form-input: rgba(255, 255, 255, 0.9);
+  --c-form-placeholder: rgba(255, 255, 255, 0.22);
+}
+
+html, body {
+  background-color: #080C14 !important;
+  color: #FFFFFF !important;
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* ADMIN PANEL TYPOGRAPHY */
+.admin-heading {
+  font-family: var(--font-heading);
+  font-weight: var(--fw-page-heading);
+  font-size: var(--fs-page-heading);
+  color: var(--c-primary-heading);
+  letter-spacing: var(--ls-page-heading);
+  line-height: var(--lh-heading);
+  text-transform: uppercase;
+}
+
+.admin-subheading {
+  font-family: var(--font-body);
+  font-weight: var(--fw-page-subheading);
+  font-size: var(--fs-page-subheading);
+  color: var(--c-secondary-heading);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  line-height: var(--lh-heading);
+}
+
+.admin-table-th {
+  font-family: var(--font-body);
+  font-weight: var(--fw-table-th);
+  font-size: var(--fs-table-th);
+  letter-spacing: var(--ls-table-th);
+  text-transform: uppercase;
+  color: var(--c-table-th);
+}
+
+.admin-table-td {
+  font-family: var(--font-body);
+  font-weight: var(--fw-table-td);
+  font-size: var(--fs-table-td);
+  color: var(--c-table-td);
+}
+
+.admin-card-label {
+  font-family: var(--font-body);
+  font-size: var(--fs-card-label);
+  font-weight: var(--fw-card-label);
+  letter-spacing: var(--ls-card-label);
+  color: var(--c-card-label);
+  text-transform: uppercase;
+  line-height: var(--lh-label);
+}
+
+.admin-card-val {
+  font-family: var(--font-heading);
+  font-weight: var(--fw-card-val);
+  font-size: var(--fs-card-val);
+  color: var(--c-card-val);
+  line-height: var(--lh-card-val);
+}
+
+.admin-btn-text {
+  font-family: var(--font-body);
+  font-weight: var(--fw-btn);
+  font-size: var(--fs-btn);
+  letter-spacing: var(--ls-btn);
+  text-transform: uppercase;
+  line-height: var(--lh-btn);
+}
+
+/* ANIMATIONS (PART 4 SPEC) */
+@keyframes pageFadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pageTransitionOut {
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(-8px); }
+}
+
+@keyframes pageTransitionIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes headerEntrance {
+  from { transform: translateY(-100%); }
+  to { transform: translateY(0); }
+}
+
+@keyframes modalEntrance {
+  from { opacity: 0; transform: scale(0.92); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes modalExit {
+  from { opacity: 1; transform: scale(1); }
+  to { opacity: 0; transform: scale(0.94); }
+}
+
+@keyframes backdropFade {
+  from { opacity: 0; }
+  to { opacity: 0.75; }
+}
+
+@keyframes backdropFadeOut {
+  from { opacity: 0.75; }
+  to { opacity: 0; }
+}
+
+@keyframes rowEntrance {
+  from { opacity: 0; transform: translateX(-8px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes cardEntrance {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes sidebarStagger {
+  from { opacity: 0; transform: translateX(-14px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes dropdownEntrance {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes barChartGrow {
+  from { transform: scaleY(0); }
+  to { transform: scaleY(1); }
+}
+
+@keyframes toastSlideIn {
+  from { opacity: 0; transform: translateX(110%); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes toastSlideOut {
+  from { opacity: 1; transform: translateX(0); }
+  to { opacity: 0; transform: translateX(110%); }
+}
+
+@keyframes bellShake {
+  0%, 100% { transform: rotate(0deg); }
+  16% { transform: rotate(-18deg); }
+  33% { transform: rotate(18deg); }
+  50% { transform: rotate(-18deg); }
+  66% { transform: rotate(18deg); }
+  83% { transform: rotate(-18deg); }
+}
+
+@keyframes syncDotPulse {
+  0%, 100% { transform: scale(1); opacity: 0.2; }
+  50% { transform: scale(1.5); opacity: 1; }
+}
+
+@keyframes syncDotRipple {
+  0% { transform: scale(1); opacity: 0.3; }
+  100% { transform: scale(1.8); opacity: 0; }
+}
+
+@keyframes tabSwitchIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes emptyStateIcon {
+  from { opacity: 0; transform: scale(0.7); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes emptyStateFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-7px); }
+}
+
+@keyframes badgeEntrance {
+  from { opacity: 0; transform: scale(0.72); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes errorShake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(8px); }
+  40% { transform: translateX(-8px); }
+  60% { transform: translateX(4px); }
+  80% { transform: translateX(-4px); }
+}
+
+@keyframes deleteModalShake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(10px); }
+  40% { transform: translateX(-10px); }
+  60% { transform: translateX(5px); }
+  80% { transform: translateX(-5px); }
+}
+
+.animate-page-entrance {
+  animation: pageTransitionIn 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform, opacity;
+}
+
+.animate-page-exit {
+  animation: pageTransitionOut 0.18s ease-in forwards;
+  will-change: transform, opacity;
+}
+
+.animate-header-entrance {
+  animation: headerEntrance 0.4s ease-out 0.1s both;
+  will-change: transform;
+}
+
+.animate-modal-entrance {
+  animation: modalEntrance 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform, opacity;
+}
+
+.animate-modal-exit {
+  animation: modalExit 0.18s ease-in forwards;
+  will-change: transform, opacity;
+}
+
+.animate-backdrop-fade {
+  animation: backdropFade 0.22s ease-out forwards;
+  will-change: opacity;
+}
+
+.animate-backdrop-fade-out {
+  animation: backdropFadeOut 0.18s ease-in forwards;
+  will-change: opacity;
+}
+
+.animate-row-entrance {
+  animation: rowEntrance 0.28s ease-out forwards;
+  will-change: transform, opacity;
+}
+
+.animate-card-entrance {
+  animation: cardEntrance 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform, opacity;
+}
+
+.animate-sidebar-stagger {
+  animation: sidebarStagger 0.3s ease-out forwards;
+  will-change: transform, opacity;
+}
+
+.animate-dropdown-entrance {
+  animation: dropdownEntrance 0.22s ease-out forwards;
+  will-change: transform, opacity;
+}
+
+.animate-bar-grow {
+  animation: barChartGrow 0.55s ease-out forwards;
+  transform-origin: bottom center;
+  will-change: transform;
+}
+
+.animate-toast-in {
+  animation: toastSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform, opacity;
+}
+
+.animate-toast-out {
+  animation: toastSlideOut 0.22s ease-in forwards;
+  will-change: transform, opacity;
+}
+
+.animate-bell-shake {
+  animation: bellShake 0.45s ease-in-out;
+  will-change: transform;
+}
+
+.animate-dot-pulse {
+  animation: syncDotPulse 1.6s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+
+.animate-dot-ripple {
+  animation: syncDotRipple 1.6s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+
+.animate-tab-in {
+  animation: tabSwitchIn 0.26s ease-out forwards;
+  will-change: transform, opacity;
+}
+
+.animate-empty-icon {
+  animation: emptyStateIcon 0.35s ease-out forwards;
+  will-change: transform, opacity;
+}
+
+.animate-empty-float {
+  animation: emptyStateFloat 3.2s ease-in-out infinite;
+  will-change: transform;
+}
+
+.animate-badge-in {
+  animation: badgeEntrance 0.2s ease-out forwards;
+  will-change: transform, opacity;
+}
+
+.animate-error-shake {
+  animation: errorShake 0.4s ease-in-out;
+  will-change: transform;
+}
+
+.animate-delete-shake {
+  animation: deleteModalShake 0.4s ease-in-out;
+  will-change: transform;
+}
+
+/* CUSTOM SCROLLBAR */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #080A0F;
+}
+::-webkit-scrollbar-thumb {
+  background: #FF6B00;
+  border-radius: 10px;
+}
+
+/* HIDE NUMBER INPUT ARROWS */
+input[type=number]::-webkit-inner-spin-button, 
+input[type=number]::-webkit-outer-spin-button { 
+  -webkit-appearance: none; 
+  margin: 0; 
+}
+input[type=number] {
+  -moz-appearance: textfield;
+}
+
+/* BASE UTILITIES */
+.admin-card-hover {
+  cursor: pointer;
+  transition: all 0.3s ease;
+  will-change: transform, box-shadow, border-color;
+}
+.admin-card-hover:hover {
+  transform: scale(1.02);
+  box-shadow: 0 0 15px rgba(255, 107, 0, 0.3);
+  border-color: rgba(255, 107, 0, 0.3) !important;
+}
+
+.admin-btn-hover {
+  cursor: pointer;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  will-change: transform, box-shadow;
+}
+.admin-btn-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(255, 107, 0, 0.4);
+}
+.admin-btn-hover:active {
+  transform: scale(0.97);
+  transition-duration: 0s;
+}
+
+.admin-btn-outline {
+  transition: border-color 0.2s, background-color 0.2s;
+}
+.admin-btn-outline:hover {
+  background-color: rgba(255, 106, 0, 0.08);
+}
+
+.admin-input-focus {
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+.admin-input-focus:focus {
+  border-color: #FF6A00;
+  background-color: rgba(255, 106, 0, 0.04) !important;
+}
+
+/* REDUCED MOTION PREFERENCE */
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* PUBLIC WEBSITE STYLES PRESERVED */
+.app-container { max-width: 1280px; margin: 0 auto; padding: 0 clamp(1.5rem, 5vw, 5rem); }
+.section-padding { padding: clamp(4rem, 8vw, 7rem) 0; }
+.hero-padding { padding-top: 72px; min-height: 100vh; }
+h1.italic { font-family: var(--font-heading); font-size: clamp(3rem, 7vw, 6.5rem); font-weight: 900; font-style: italic; line-height: 1.05; color: #FFFFFF !important; }
+h2.italic { font-family: var(--font-heading); font-size: clamp(2rem, 4vw, 3.8rem); font-weight: 800; font-style: italic; line-height: 1.1; color: #FFFFFF !important; }
+p { max-width: 60ch; }
+.label-tag { font-size: 0.72rem; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase; color: var(--orange-primary); line-height: 1.2; }
+
+/* PRINT STYLES FOR TAX INVOICE (CHANGE 9) */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 15mm;
+  }
+
+  body {
+    background: white !important;
+    color: black !important;
+    font-family: 'Inter', sans-serif !important;
+  }
+  
+  .no-print, 
+  nav, 
+  aside, 
+  header, 
+  .admin-sidebar,
+  .admin-header,
+  .toaster,
+  .modal-backdrop,
+  button:not(.print-visible) {
+    display: none !important;
+  }
+  
+  .print-only {
+    display: block !important;
+  }
+  
+  .invoice-print-container {
+    display: block !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    background: white !important;
+    color: black !important;
+  }
+
+  table {
+    border-collapse: collapse !important;
+    width: 100% !important;
+  }
+
+  th, td {
+    border: 1px solid #000 !important;
+    padding: 6px !important;
+    font-size: 11px !important;
+  }
+
+  .text-orange-primary {
+    color: black !important;
+  }
+}
+
+/* CUSTOM TOASTER ANIMATIONS (CHANGE 14) */
+.toaster-enter {
+  animation: toastSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+}
+.toaster-leave {
+  animation: toastSlideOut 0.22s ease-in forwards !important;
+}

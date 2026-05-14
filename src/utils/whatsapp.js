@@ -1,0 +1,52 @@
+import { formatDate } from './formatters';
+
+export function shareOnWhatsApp(bill, settings) {
+  const itemsList = bill.items
+    .map(item => `• ${item.productName} x${item.quantity} = ₹${item.itemTotal}`)
+    .join('%0A');
+
+  const upiLink = settings?.upiId 
+    ? `upi://pay?pa=${settings.upiId}&pn=${encodeURIComponent(settings.shopName || 'Chandrakant Traders')}&am=${bill.balanceDue}&cu=INR&tn=Bill%20%23${bill.billNo}`
+    : '';
+
+  const message = `
+🔧 *${settings?.shopName || 'CHANDRAKANT TRADERS'}*
+${settings?.tagline || 'Dealer: Tyre & Tube'} | Savarkundla
+
+📄 *Bill No:* ${bill.billNo}
+📅 *Date:* ${formatDate(bill.createdAt)}
+
+${itemsList}
+
+💰 *Grand Total: ₹${bill.grandTotal}*
+✅ *Paid: ₹${bill.amountPaid}*
+${bill.balanceDue > 0 ? `⚠️ *Balance Due: ₹${bill.balanceDue}*` : '🤝 *Payment Complete*'}
+
+${upiLink ? `💳 *Pay via UPI:* ${upiLink}` : ''}
+
+📞 ${settings?.phone || '99240 58659'}
+Thank you! આભાર! 🙏
+  `.trim();
+
+  const encodedMessage = encodeURIComponent(message);
+  const url = `https://wa.me/91${bill.customerPhone}?text=${encodedMessage}`;
+  window.open(url, '_blank');
+}
+
+export function sendUdhaarReminder(customer, settings) {
+  const message = `
+🔧 *${settings?.shopName || 'CHANDRAKANT TRADERS'}*
+Savarkundla | Ph: ${settings?.phone || '99240 58659'}
+
+Respected *${customer.name}*,
+
+Your pending balance is *₹${customer.balance}*.
+
+Please visit our shop or call us to clear the balance.
+
+આભાર 🙏
+  `.trim();
+
+  const url = `https://wa.me/91${customer.phone}?text=${encodeURIComponent(message)}`;
+  window.open(url, '_blank');
+}
