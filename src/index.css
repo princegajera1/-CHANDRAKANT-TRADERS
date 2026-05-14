@@ -12,25 +12,32 @@
   --font-heading: 'Barlow Condensed', sans-serif;
   --font-body: 'Inter', sans-serif;
 
+  /* GLOBAL MEDIA RESPONSIVENESS */
+  img, video {
+    max-width: 100%;
+    height: auto;
+    object-fit: cover;
+  }
+
   /* FONT SIZES */
-  --fs-page-heading: 1.75rem;
-  --fs-page-subheading: 0.78rem;
-  --fs-section-heading: 1.1rem;
-  --fs-card-title: 0.9rem;
-  --fs-card-val: 1.6rem;
-  --fs-card-label: 0.65rem;
-  --fs-table-th: 0.68rem;
-  --fs-table-td: 0.875rem;
-  --fs-table-td-important: 0.9rem;
-  --fs-btn: 0.75rem;
-  --fs-nav-label: 0.72rem;
-  --fs-badge: 0.65rem;
-  --fs-helper: 0.78rem;
-  --fs-modal-heading: 1.3rem;
-  --fs-form-label: 0.68rem;
-  --fs-form-input: 0.875rem;
-  --fs-toast: 0.82rem;
-  --fs-footer: 0.68rem;
+  --fs-page-heading: clamp(1.4rem, 4vw, 1.75rem);
+  --fs-page-subheading: clamp(0.7rem, 2vw, 0.78rem);
+  --fs-section-heading: clamp(1rem, 3vw, 1.1rem);
+  --fs-card-title: clamp(0.8rem, 2.5vw, 0.9rem);
+  --fs-card-val: clamp(1.2rem, 4vw, 1.6rem);
+  --fs-card-label: clamp(0.6rem, 1.5vw, 0.65rem);
+  --fs-table-th: clamp(0.6rem, 1.5vw, 0.68rem);
+  --fs-table-td: clamp(0.8rem, 2vw, 0.875rem);
+  --fs-table-td-important: clamp(0.85rem, 2.2vw, 0.9rem);
+  --fs-btn: clamp(0.7rem, 2vw, 0.75rem);
+  --fs-nav-label: clamp(0.65rem, 2vw, 0.72rem);
+  --fs-badge: clamp(0.6rem, 1.5vw, 0.65rem);
+  --fs-helper: clamp(0.7rem, 2vw, 0.78rem);
+  --fs-modal-heading: clamp(1.1rem, 3vw, 1.3rem);
+  --fs-form-label: clamp(0.6rem, 1.5vw, 0.68rem);
+  --fs-form-input: clamp(0.8rem, 2vw, 0.875rem);
+  --fs-toast: clamp(0.75rem, 2vw, 0.82rem);
+  --fs-footer: clamp(0.6rem, 1.5vw, 0.68rem);
 
   /* FONT WEIGHTS */
   --fw-page-heading: 800;

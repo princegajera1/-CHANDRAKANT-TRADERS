@@ -64,7 +64,7 @@ export const Modal = ({ isOpen, onClose, title, children, footer, maxWidth = '56
       />
       <div 
         onAnimationEnd={handleAnimationEnd}
-        className={`relative bg-[#0D1220] border border-[#FF6B00]/20 rounded-[20px] p-[2rem] flex flex-col w-full max-h-[85vh] ${isExiting ? 'animate-modal-exit' : 'animate-[modalEntrance_0.3s_cubic-bezier(0.16,1,0.3,1)_forwards]'} ${isShaking ? 'animate-[errorShake_0.4s_ease-in-out]' : ''} ${className}`}
+        className={`relative bg-[#0D1220] border border-[#FF6B00]/20 rounded-[20px] p-[1.5rem] sm:p-[2rem] flex flex-col w-[95vw] sm:w-full max-h-[90vh] sm:max-h-[85vh] ${isExiting ? 'animate-modal-exit' : 'animate-[modalEntrance_0.3s_cubic-bezier(0.16,1,0.3,1)_forwards]'} ${isShaking ? 'animate-[errorShake_0.4s_ease-in-out]' : ''} ${className}`}
         style={{ maxWidth }}
       >
         <div className="flex items-center justify-between mb-8">

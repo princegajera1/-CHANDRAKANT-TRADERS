@@ -109,19 +109,28 @@ export const Sidebar = ({ isOpen, onClose }) => {
                 overflow-hidden transition-all duration-500 ease-in-out
                 ${isSettingsOpen ? 'max-h-[500px] opacity-100 mt-2' : 'max-h-0 opacity-0 mt-0'}
               `} style={{ maxHeight: isSettingsOpen ? '500px' : '0' }}>
-                <div className="space-y-1 pl-4 border-l border-white/5 ml-7">
+                <div className="space-y-1.5 pl-4 border-l-2 border-white/[0.05] ml-7">
                   {gridNavigation
                     .filter(item => !item.superAdminOnly || isSuperAdmin)
-                    .map((item) => (
-                    <NavLink
-                      key={item.path}
-                      to={item.path}
-                      className="flex items-center gap-3.5 px-4 py-3 rounded-lg text-white/30 hover:text-[#FF6A00] hover:bg-[#FF6A00]/5 transition-all group"
-                    >
-                      <item.icon size={16} className="group-hover:scale-110 transition-transform" />
-                      <span className="text-[0.65rem] uppercase tracking-[0.05em] font-[600]">{item.label}</span>
-                    </NavLink>
-                  ))}
+                    .map((item) => {
+                      const isActive = location.pathname === item.path;
+                      return (
+                        <NavLink
+                          key={item.path}
+                          to={item.path}
+                          onClick={() => window.innerWidth < 1024 && onClose()}
+                          className={`
+                            flex items-center gap-3.5 px-4 py-3 rounded-xl transition-all duration-300 group
+                            ${isActive 
+                              ? 'bg-[#FF6A00]/10 text-white border border-[#FF6A00]/20' 
+                              : 'text-white/40 hover:text-white/80 hover:bg-white/[0.03] border border-transparent'}
+                          `}
+                        >
+                          <item.icon size={16} className={`transition-transform duration-300 ${isActive ? 'scale-110 text-[#FF6A00]' : 'group-hover:scale-110 group-hover:text-[#FF6A00]'}`} />
+                          <span className={`text-[0.68rem] uppercase tracking-[0.1em] font-body ${isActive ? 'font-[700] text-white' : 'font-[600]'}`}>{item.label}</span>
+                        </NavLink>
+                      );
+                  })}
                 </div>
               </div>
             </div>
