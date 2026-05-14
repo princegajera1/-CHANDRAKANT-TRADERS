@@ -16,7 +16,7 @@ import { PrintInvoice } from '../components/ui/PrintInvoice';
 const NewBill = () => {
   const { products } = useProducts();
   const { customers } = useCustomers();
-  const { user, profile } = useAuthContext();
+  const { user, profile, isReadOnly } = useAuthContext();
   
   const [billItems, setBillItems] = useState([]);
   const [productSearch, setProductSearch] = useState('');
@@ -112,6 +112,10 @@ const NewBill = () => {
   const balanceDue = Math.max(0, grandTotal - amountPaid);
 
   const handleSaveBill = async () => {
+    if (isReadOnly) {
+      toast.error('Read-only access — authorization required');
+      return;
+    }
     if (billItems.length === 0) return toast.error('Empty Cart Protocol: Add assets to initialize');
     if (customerMode !== 'walk-in' && !selectedCustomer && !newCustomerData.name) return toast.error('Identify Recipient Profile');
 
@@ -453,11 +457,13 @@ const NewBill = () => {
 
             <button 
               className="w-full h-[64px] rounded-2xl bg-[#FF6A00] text-white font-black text-[0.8rem] uppercase tracking-[0.2em] flex items-center justify-center gap-3 hover:translate-y-[-2px] shadow-lg shadow-[#FF6A0033] transition-all disabled:opacity-50 admin-btn-hover"
-              disabled={isSaving || billItems.length === 0}
+              disabled={isSaving || billItems.length === 0 || isReadOnly}
               onClick={handleSaveBill}
             >
               {isSaving ? (
                 <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+              ) : isReadOnly ? (
+                <><Lock size={16} /> Read Only Mode</>
               ) : (
                 <>EXECUTE LOG PROTOCOL <Printer size={20} /></>
               )}

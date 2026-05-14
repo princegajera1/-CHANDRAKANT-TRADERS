@@ -419,6 +419,10 @@ html, body {
 ::-webkit-scrollbar-track {
   background: #080A0F;
 }
+::window-scrollbar-thumb {
+  background: #FF6B00;
+  border-radius: 10px;
+}
 ::-webkit-scrollbar-thumb {
   background: #FF6B00;
   border-radius: 10px;

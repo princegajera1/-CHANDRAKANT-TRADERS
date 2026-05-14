@@ -29,12 +29,16 @@ import Contact from './pages/Contact';
 import Inquiries from './pages/Inquiries';
 import SecurityProfile from './pages/SecurityProfile';
 import TermsOfOperations from './pages/TermsOfOperations';
+import Users from './pages/Users';
+import Logs from './pages/Logs';
+import ComingSoon from './pages/ComingSoon';
 
-const ProtectedRoute = ({ children, requireOwner = false }) => {
-  const { user, loading, isOwner } = useAuthContext();
+const ProtectedRoute = ({ children, requireOwner = false, requireSuperAdmin = false }) => {
+  const { user, loading, isOwner, isSuperAdmin } = useAuthContext();
   if (loading) return <div className="h-screen flex items-center justify-center">Loading...</div>;
   if (!user) return <Navigate to="/login" />;
   if (requireOwner && !isOwner) return <Navigate to="/" />;
+  if (requireSuperAdmin && !isSuperAdmin) return <Navigate to="/dashboard" />;
   return <Layout>{children}</Layout>;
 };
 
@@ -74,6 +78,12 @@ function App() {
             <Route path="/trash" element={<ProtectedRoute><Trash /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
             <Route path="/inquiries" element={<ProtectedRoute><Inquiries /></ProtectedRoute>} />
+            <Route path="/users" element={<ProtectedRoute requireSuperAdmin><Users /></ProtectedRoute>} />
+            <Route path="/logs" element={<ProtectedRoute><Logs /></ProtectedRoute>} />
+            <Route path="/matrix" element={<ProtectedRoute><ComingSoon title="Digital Matrix" /></ProtectedRoute>} />
+            <Route path="/alerts" element={<ProtectedRoute><ComingSoon title="Alert Protocols" /></ProtectedRoute>} />
+            <Route path="/security" element={<ProtectedRoute><ComingSoon title="Security Grid" /></ProtectedRoute>} />
+            <Route path="/registry" element={<ProtectedRoute><ComingSoon title="Data Registry" /></ProtectedRoute>} />
 
             {/* Fallback */}
             <Route path="*" element={<Navigate to="/" />} />
@@ -85,27 +95,29 @@ function App() {
             duration: 3000,
             className: 'animate-toast-in',
             style: {
-              background: '#0D1220',
+              background: '#0A0F1A',
               color: '#FFFFFF',
-              border: '1px solid rgba(255,255,255,0.1)',
-              borderRadius: '12px',
+              border: '1px solid rgba(255,255,255,0.05)',
+              borderRadius: '16px',
               fontFamily: 'Inter, sans-serif',
-              fontSize: '0.85rem',
-              fontWeight: 600,
-              boxShadow: '0 20px 40px -10px rgba(0,0,0,0.5)',
-              padding: '12px 16px',
+              fontSize: '0.8rem',
+              fontWeight: 700,
+              boxShadow: '0 20px 50px -12px rgba(0,0,0,0.8)',
+              padding: '16px 20px',
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em'
             },
             success: {
-              iconTheme: { primary: '#10B981', secondary: '#0D1220' },
-              style: { borderLeft: '4px solid #10B981' },
+              iconTheme: { primary: '#FFB800', secondary: '#0A0F1A' },
+              style: { borderLeft: '4px solid #FFB800' },
             },
             error: {
-              iconTheme: { primary: '#EF4444', secondary: '#0D1220' },
+              iconTheme: { primary: '#EF4444', secondary: '#0A0F1A' },
               style: { borderLeft: '4px solid #EF4444' },
             },
             blank: {
-              iconTheme: { primary: '#FF6A00', secondary: '#0D1220' },
-              style: { borderLeft: '4px solid #FF6A00' },
+              iconTheme: { primary: '#FFB800', secondary: '#0A0F1A' },
+              style: { borderLeft: '4px solid #FFB800' },
             }
           }} 
         />

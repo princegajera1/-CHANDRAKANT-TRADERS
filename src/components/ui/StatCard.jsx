@@ -39,15 +39,17 @@ export const StatCard = ({ title, value, icon: Icon, color = 'orange', subValue,
     green: 'bg-[#10B981]/10 text-[#10B981]',
     red: 'bg-red-500/10 text-red-500',
     orange: 'bg-[#FF6A00]/10 text-[#FF6A00]',
+    purple: 'bg-purple-500/10 text-purple-500',
   };
 
   return (
     <div 
       onClick={onClick}
       className={`
-        p-[1.6rem] rounded-[16px] bg-[#0D1220] border border-white/[0.07] admin-card-hover
-        flex items-start justify-between relative overflow-hidden group
-        ${onClick ? 'cursor-pointer' : ''}
+        p-[1.6rem] rounded-[16px] bg-[#0D1220] border border-white/[0.07]
+        flex items-start justify-between relative overflow-hidden group h-full
+        transition-all duration-300 hover:-translate-y-1 hover:border-[#FF6A00]/30 hover:bg-[#121A2D]
+        ${onClick ? 'cursor-pointer active:scale-[0.98]' : ''}
       `}
     >
       <div className="relative z-10 space-y-2">

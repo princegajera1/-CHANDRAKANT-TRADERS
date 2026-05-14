@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useProducts } from '../hooks/useProducts';
-import { Search, Plus, Eye, Edit2, Trash2, Package, X, AlertTriangle } from 'lucide-react';
+import { useAuthContext } from '../context/AuthContext';
+import { Search, Plus, Eye, Edit2, Trash2, Package, X, AlertTriangle, Lock } from 'lucide-react';
 import { Modal } from '../components/ui/Modal';
 import { addProduct, updateProduct } from '../firebase/products';
 import { moveToTrash } from '../firebase/trash';
@@ -26,6 +27,7 @@ const Inventory = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { products, loading } = useProducts();
+  const { isReadOnly } = useAuthContext();
   
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('All');
@@ -73,6 +75,10 @@ const Inventory = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isReadOnly) {
+      toast.error('Read-only access — authorization required');
+      return;
+    }
     try {
       const finalData = { ...formData };
       
@@ -153,9 +159,11 @@ const Inventory = () => {
         </div>
         <button 
           onClick={() => { setEditingProduct(null); resetForm(); setIsModalOpen(true); }}
-          className="h-[46px] px-8 rounded-xl bg-[#FF6A00] text-white font-body font-[700] text-[0.72rem] uppercase tracking-[0.12em] shadow-lg shadow-[#FF6A0033] hover:translate-y-[-2px] transition-all flex items-center gap-2 admin-btn-hover"
+          disabled={isReadOnly}
+          className="h-[52px] px-8 rounded-2xl bg-[#FF6A00] text-white font-body font-[700] text-[0.8rem] uppercase tracking-[0.14em] shadow-lg shadow-[#FF6A0033] hover:translate-y-[-2px] transition-all flex items-center gap-3 admin-btn-hover disabled:opacity-50 disabled:cursor-not-allowed"
+          title={isReadOnly ? "Read-Only Mode - Upgrade to add assets" : ""}
         >
-          <Plus size={18} /> ADD NEW PRODUCT
+          <Plus size={20} /> <span className="hidden sm:inline">Add Product</span>
         </button>
       </div>
 
@@ -399,7 +407,9 @@ const Inventory = () => {
 
           <div className="pt-6 flex gap-4">
             <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 h-[56px] rounded-xl bg-transparent border border-white/20 text-[0.75rem] font-black uppercase tracking-widest text-white hover:bg-white/5 transition-all admin-btn-hover">Cancel</button>
-            <button type="submit" className="flex-1 h-[56px] rounded-xl bg-[#FF6A00] text-[0.75rem] font-black uppercase tracking-widest text-white shadow-[0_0_20px_rgba(255,106,0,0.3)] hover:bg-[#e65c00] hover:-translate-y-1 transition-all admin-btn-hover">Save Changes</button>
+            <button type="submit" disabled={isReadOnly} className="flex-1 h-[56px] rounded-xl bg-[#FF6A00] text-[0.75rem] font-black uppercase tracking-widest text-white shadow-[0_0_20px_rgba(255,106,0,0.3)] hover:bg-[#e65c00] hover:-translate-y-1 transition-all admin-btn-hover disabled:opacity-50 disabled:cursor-not-allowed">
+              {isReadOnly ? <><Lock size={14} className="inline mr-2" /> Read Only Mode</> : 'Save Changes'}
+            </button>
           </div>
         </form>
       </Modal>

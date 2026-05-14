@@ -1,18 +1,30 @@
 import React, { useState, useEffect } from 'react';
 import { db, auth } from '../firebase/config';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
-import { updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
-import { Store, Globe, Bell, Shield, Database, Save, Trash2, Link as LinkIcon, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { doc, getDoc, updateDoc, collection, onSnapshot, query, orderBy, limit, where, addDoc, serverTimestamp, deleteDoc } from 'firebase/firestore';
+import { updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
+import { Store, Globe, Bell, Shield, Database, Save, Trash2, Link as LinkIcon, Eye, EyeOff, Users, History, UserPlus, Lock, Download, Search, CheckCircle, XCircle, UserCheck } from 'lucide-react';
+import { format } from 'date-fns';
+import { useAuthContext } from '../context/AuthContext';
+import { logActivity } from '../utils/activity';
 import { useProducts } from '../hooks/useProducts';
 import { useCustomers } from '../hooks/useCustomers';
 import { useBills } from '../hooks/useBills';
 import { useSuppliers } from '../hooks/useSuppliers';
+import { Modal } from '../components/ui/Modal';
 
 const Settings = () => {
+  const { isSuperAdmin, isDemo, isReadOnly, user: currentUser } = useAuthContext();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('shop');
+  const [admins, setAdmins] = useState([]);
+  const [logs, setLogs] = useState([]);
+  const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
+  const [newAdmin, setNewAdmin] = useState({ name: '', email: '', password: '', role: 'admin' });
+  const [logFilter, setLogFilter] = useState('All');
+  const [searchTerm, setSearchTerm] = useState('');
+  
   const [settings, setSettings] = useState({
     name: 'CHANDRAKANT TRADERS', 
     phone: '+91 99240 58859', 
@@ -51,7 +63,30 @@ const Settings = () => {
     fetchSettings();
   }, []);
 
+  // Admin Network Listener
+  useEffect(() => {
+    const q = query(collection(db, 'admins'), orderBy('addedAt', 'desc'));
+    const unsubscribe = onSnapshot(q, (snap) => {
+      setAdmins(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    });
+    return unsubscribe;
+  }, []);
+
+  // Activity Logs Listener
+  useEffect(() => {
+    if (!isSuperAdmin) return;
+    const q = query(collection(db, 'activityLogs'), orderBy('timestamp', 'desc'), limit(100));
+    const unsubscribe = onSnapshot(q, (snap) => {
+      setLogs(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    });
+    return unsubscribe;
+  }, [isSuperAdmin]);
+
   const handleSave = async () => {
+    if (isReadOnly) {
+      toast.error('Read-only access — authorization required');
+      return;
+    }
     if (activeTab === 'security') {
       if (!passwords.current || !passwords.new || !passwords.confirm) return toast.error('Fill all security fields');
       if (passwords.new !== passwords.confirm) return toast.error('New protocols do not match');
@@ -86,6 +121,69 @@ const Settings = () => {
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleAddAdmin = async (e) => {
+    e.preventDefault();
+    if (isReadOnly) return toast.error('Read-only access — authorization required');
+    if (!isSuperAdmin) return toast.error('Super Admin authority required');
+    
+    setSaving(true);
+    try {
+      // In a real production app, you'd use a Cloud Function to create users.
+      // Here, we'll add to Firestore and assume the Super Admin creates the Auth account manually 
+      // or we use a secondary auth instance if configured.
+      // For this implementation, we add to the 'admins' collection.
+      
+      await addDoc(collection(db, 'admins'), {
+        email: newAdmin.email,
+        name: newAdmin.name,
+        role: newAdmin.role,
+        isActive: true,
+        addedBy: currentUser.uid,
+        addedAt: serverTimestamp()
+      });
+      
+      toast.success(`${newAdmin.name} enlisted in Admin Network`);
+      setIsAdminModalOpen(false);
+      setNewAdmin({ name: '', email: '', password: '', role: 'admin' });
+    } catch (err) {
+      toast.error("Failed to add admin");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleRemoveAdmin = async (adminId, adminName, adminEmail) => {
+    if (isReadOnly) return toast.error('Read-only access — authorization required');
+    if (!isSuperAdmin) return toast.error('Super Admin authority required');
+    if (adminEmail === 'princegajera944@gmail.com') return toast.error('Super Admin cannot be removed');
+    
+    if (!window.confirm(`Are you sure you want to revoke access for ${adminName}?`)) return;
+
+    try {
+      await deleteDoc(doc(db, 'admins', adminId));
+      toast.success(`${adminName} removed from network`);
+    } catch (err) {
+      toast.error("Removal failed");
+    }
+  };
+
+  const handleExportLogs = () => {
+    const csvContent = "data:text/csv;charset=utf-8," 
+      + "Date,User,Role,Action,IP,Device\n"
+      + logs.map(l => {
+          const date = l.timestamp?.toDate ? l.timestamp.toDate().toLocaleString() : 'N/A';
+          return `"${date}","${l.userName}","${l.role}","${l.action}","${l.ipAddress}","${l.device}"`;
+        }).join("\n");
+    
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `activity_logs_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const handleClearData = () => {
@@ -129,8 +227,10 @@ const Settings = () => {
             { id: 'digital', icon: Globe, label: 'Digital Matrix' },
             { id: 'alerts', icon: Bell, label: 'Alert Protocols' },
             { id: 'security', icon: Shield, label: 'Security Grid' },
+            { id: 'admins', icon: Users, label: 'Admin Network' },
+            isSuperAdmin && { id: 'logs', icon: History, label: 'Activity Logs' },
             { id: 'data', icon: Database, label: 'Data Registry' }
-          ].map((item) => (
+          ].filter(Boolean).map((item) => (
             <button 
               key={item.id}
               onClick={() => setActiveTab(item.id)}
@@ -342,6 +442,194 @@ const Settings = () => {
             </div>
           )}
 
+          {activeTab === 'admins' && (
+            <div className="space-y-8 animate-page-entrance">
+              <div className="p-10 rounded-[32px] bg-[#0D1220] border border-white/[0.05] space-y-10">
+                <div className="flex items-center justify-between border-b border-white/5 pb-6">
+                  <div className="flex items-center gap-3">
+                    <Users size={20} className="text-[#FF6A00]" />
+                    <h3 className="font-body font-[700] text-[0.72rem] text-white/[0.50] uppercase tracking-[0.18em]">Admin Network</h3>
+                  </div>
+                  {isSuperAdmin && (
+                    <button 
+                      onClick={() => setIsAdminModalOpen(true)}
+                      className="px-4 py-2 bg-[#FF6A00]/10 border border-[#FF6A00]/20 rounded-lg text-[#FF6A00] text-[0.65rem] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-[#FF6A00] hover:text-white transition-all"
+                    >
+                      <UserPlus size={14} /> Add New Admin
+                    </button>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 gap-4">
+                  {admins.map((admin) => (
+                    <div key={admin.id} className="p-6 rounded-2xl bg-[#080C14] border border-white/5 flex flex-col md:flex-row md:items-center justify-between gap-6 group hover:border-[#FF6A00]/20 transition-all">
+                      <div className="flex items-center gap-5">
+                        <div className="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center text-white/20 group-hover:bg-[#FF6A00]/10 group-hover:text-[#FF6A00] transition-all font-black text-lg uppercase">
+                          {admin.name?.[0] || 'A'}
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-3">
+                            <h4 className="font-body font-[700] text-[0.95rem] text-white uppercase">{admin.name}</h4>
+                            <span className={`px-2 py-0.5 rounded text-[0.55rem] font-black uppercase tracking-[0.15em] ${admin.role === 'superadmin' ? 'bg-[#FF6A00] text-white' : 'bg-white/10 text-white/50'}`}>
+                              {admin.role}
+                            </span>
+                          </div>
+                          <p className="text-[0.75rem] text-white/30 font-body font-[400] mt-1">{admin.email}</p>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-8">
+                        <div className="text-right hidden sm:block">
+                          <p className="text-[0.65rem] text-white/20 uppercase tracking-widest font-black">Added At</p>
+                          <p className="text-[0.75rem] text-white/50 mt-1">
+                            {admin.addedAt?.toDate ? admin.addedAt.toDate().toLocaleDateString() : 'Initial'}
+                          </p>
+                        </div>
+                        {isSuperAdmin && admin.email !== 'princegajera944@gmail.com' && admin.email !== currentUser.email && (
+                          <button 
+                            onClick={() => handleRemoveAdmin(admin.id, admin.name, admin.email)}
+                            className="p-3 rounded-xl text-red-500/50 hover:text-red-500 hover:bg-red-500/10 transition-all"
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'logs' && isSuperAdmin && (
+            <div className="space-y-8 animate-page-entrance">
+              {/* Summary Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                {[
+                  { label: 'Total Logins Today', val: logs.filter(l => l.action === 'LOGIN' && l.timestamp?.toDate().toDateString() === new Date().toDateString()).length, icon: History, color: 'text-blue-400', bg: 'bg-blue-400/10' },
+                  { label: 'Active Now', val: logs.filter(l => l.action === 'LOGIN' && (new Date() - l.timestamp?.toDate()) < 3600000).length, icon: UserCheck, color: 'text-green-500', bg: 'bg-green-500/10' },
+                  { label: 'Guest Logins', val: logs.filter(l => l.role === 'guest').length, icon: Eye, color: 'text-[#FF6A00]', bg: 'bg-[#FF6A00]/10' },
+                  { label: 'Admin Logins', val: logs.filter(l => l.role === 'admin' || l.role === 'superadmin').length, icon: Shield, color: 'text-purple-400', bg: 'bg-purple-400/10' },
+                ].map((stat, i) => (
+                  <div key={i} className="p-6 rounded-[28px] bg-[#0D1220] border border-white/[0.05] flex items-center gap-5">
+                    <div className={`w-12 h-12 rounded-2xl ${stat.bg} ${stat.color} flex items-center justify-center`}>
+                      <stat.icon size={20} />
+                    </div>
+                    <div>
+                      <h4 className="text-[1.5rem] font-heading font-black text-white leading-none">{stat.val}</h4>
+                      <p className="text-[0.65rem] font-bold text-white/30 uppercase tracking-widest mt-1.5">{stat.label}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="p-10 rounded-[32px] bg-[#0D1220] border border-white/[0.05] space-y-10">
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 border-b border-white/5 pb-8">
+                  <div className="flex items-center gap-3">
+                    <History size={20} className="text-[#FF6A00]" />
+                    <h3 className="font-body font-[700] text-[0.72rem] text-white/[0.50] uppercase tracking-[0.18em]">Activity Audit Trail</h3>
+                  </div>
+                  
+                  <div className="flex flex-wrap items-center gap-4">
+                    <div className="relative">
+                      <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/20" size={14} />
+                      <input 
+                        placeholder="Search email/name..."
+                        className="h-10 pl-10 pr-4 bg-white/5 border border-white/10 rounded-lg text-[0.75rem] text-white outline-none focus:border-[#FF6A00]/50"
+                        value={searchTerm}
+                        onChange={e => setSearchTerm(e.target.value)}
+                      />
+                    </div>
+                    <select 
+                      className="h-10 px-4 bg-white/5 border border-white/10 rounded-lg text-[0.7rem] font-bold text-white/60 outline-none"
+                      value={logFilter}
+                      onChange={e => setLogFilter(e.target.value)}
+                    >
+                      <option value="All">All Actions</option>
+                      <option value="LOGIN">Logins</option>
+                      <option value="LOGOUT">Logouts</option>
+                      <option value="admin">Admins</option>
+                      <option value="guest">Guests</option>
+                    </select>
+                    <button 
+                      onClick={handleExportLogs}
+                      className="h-10 px-4 bg-[#FF6A00] text-white rounded-lg text-[0.65rem] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-[#ff7b1a] transition-all"
+                    >
+                      <Download size={14} /> Export CSV
+                    </button>
+                  </div>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-separate border-spacing-y-2">
+                    <thead>
+                      <tr>
+                        <th className="py-4 px-6 text-[0.65rem] font-black uppercase tracking-widest text-white/20">Authorized Identity</th>
+                        <th className="py-4 px-6 text-[0.65rem] font-black uppercase tracking-widest text-white/20 text-center">Action Protocol</th>
+                        <th className="py-4 px-6 text-[0.65rem] font-black uppercase tracking-widest text-white/20">Operational Timestamp</th>
+                        <th className="py-4 px-6 text-[0.65rem] font-black uppercase tracking-widest text-white/20">Network Address</th>
+                        <th className="py-4 px-6 text-[0.65rem] font-black uppercase tracking-widest text-white/20 text-right">Device Signature</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {logs
+                        .filter(l => {
+                          if (logFilter === 'All') return true;
+                          if (logFilter === 'LOGIN' || logFilter === 'LOGOUT') return l.action === logFilter;
+                          return l.role === logFilter;
+                        })
+                        .filter(l => l.userName.toLowerCase().includes(searchTerm.toLowerCase()) || l.userEmail.toLowerCase().includes(searchTerm.toLowerCase()))
+                        .map((log) => {
+                          const isLogin = log.action === 'LOGIN';
+                          const isAdmin = log.role === 'admin' || log.role === 'superadmin';
+                          const isGuestRole = log.role === 'guest';
+                          
+                          let borderClass = 'border-l-4 border-transparent';
+                          if (isLogin && isAdmin) borderClass = 'border-l-4 border-green-500';
+                          if (isLogin && isGuestRole) borderClass = 'border-l-4 border-[#FF6A00]';
+                          if (log.action === 'LOGOUT') borderClass = 'border-l-4 border-red-500';
+
+                          return (
+                            <tr key={log.id} className={`bg-[#080C14] hover:bg-white/[0.03] transition-colors ${borderClass}`}>
+                              <td className="py-5 px-6 rounded-r-none rounded-l-none">
+                                <div className="flex items-center gap-3">
+                                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-[0.7rem] font-black ${isAdmin ? 'bg-purple-500/10 text-purple-500' : 'bg-[#FF6A00]/10 text-[#FF6A00]'}`}>
+                                    {log.userName?.[0] || 'U'}
+                                  </div>
+                                  <div>
+                                    <p className="text-[0.8rem] font-bold text-white uppercase leading-none mb-1">{log.userName}</p>
+                                    <p className="text-[0.65rem] text-white/20 font-mono">{log.userEmail}</p>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="py-5 px-6 text-center">
+                                <span className={`px-2.5 py-1 rounded text-[0.6rem] font-black uppercase tracking-widest ${isLogin ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'}`}>
+                                  {log.action}
+                                </span>
+                              </td>
+                              <td className="py-5 px-6">
+                                <p className="text-[0.8rem] text-white/50">{log.timestamp?.toDate ? format(log.timestamp.toDate(), 'MMM dd, yyyy') : 'N/A'}</p>
+                                <p className="text-[0.65rem] text-white/20 font-bold uppercase tracking-tighter mt-1">{log.timestamp?.toDate ? format(log.timestamp.toDate(), 'hh:mm:ss a') : ''}</p>
+                              </td>
+                              <td className="py-5 px-6 font-mono text-[0.75rem] text-white/30">{log.ipAddress}</td>
+                              <td className="py-5 px-6 text-right rounded-l-none rounded-r-xl">
+                                <div className="group/dev relative inline-block">
+                                  <span className="text-[0.7rem] text-white/30 hover:text-white/60 cursor-help border-b border-dashed border-white/10">{log.browser} / {log.os}</span>
+                                  <div className="absolute right-0 bottom-full mb-3 w-72 p-4 bg-black border border-white/10 rounded-2xl text-[0.65rem] text-white/50 invisible group-hover/dev:visible z-[100] shadow-2xl leading-relaxed">
+                                    {log.device}
+                                  </div>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+
           {activeTab === 'data' && (
             <div className="p-10 rounded-[32px] bg-[#0D1220] border border-white/[0.05] space-y-10 animate-page-entrance">
               <div className="flex items-center gap-3 border-b border-white/5 pb-6">
@@ -385,6 +673,53 @@ const Settings = () => {
           )}
         </div>
       </div>
+
+      <Modal isOpen={isAdminModalOpen} onClose={() => setIsAdminModalOpen(false)} title="Enlist New Admin">
+        <form onSubmit={handleAddAdmin} className="space-y-6">
+          <div className="space-y-2">
+            <label className="text-[0.65rem] font-black uppercase tracking-widest text-white/30">Name</label>
+            <input 
+              required
+              value={newAdmin.name}
+              onChange={e => setNewAdmin({...newAdmin, name: e.target.value})}
+              className="w-full h-[52px] px-5 rounded-xl bg-[#080C14] border border-white/10 text-white outline-none focus:border-[#FF6A00] transition-all"
+              placeholder="Full Name"
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-[0.65rem] font-black uppercase tracking-widest text-white/30">Email Address</label>
+            <input 
+              required
+              type="email"
+              value={newAdmin.email}
+              onChange={e => setNewAdmin({...newAdmin, email: e.target.value})}
+              className="w-full h-[52px] px-5 rounded-xl bg-[#080C14] border border-white/10 text-white outline-none focus:border-[#FF6A00] transition-all"
+              placeholder="admin@email.com"
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-[0.65rem] font-black uppercase tracking-widest text-white/30">Assign Role</label>
+            <select 
+              value={newAdmin.role}
+              onChange={e => setNewAdmin({...newAdmin, role: e.target.value})}
+              className="w-full h-[52px] px-5 rounded-xl bg-[#080C14] border border-white/10 text-white outline-none focus:border-[#FF6A00] transition-all"
+            >
+              <option value="admin">Standard Admin</option>
+              <option value="superadmin">Super Admin</option>
+            </select>
+          </div>
+          
+          <div className="pt-4">
+            <button 
+              type="submit"
+              disabled={saving}
+              className="w-full h-[52px] bg-[#FF6A00] text-white font-black uppercase tracking-widest rounded-xl hover:bg-[#FF8C38] transition-all shadow-lg shadow-[#FF6A0022] flex items-center justify-center"
+            >
+              {saving ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : 'Confirm Authorization'}
+            </button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 };

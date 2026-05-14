@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useCustomers } from '../hooks/useCustomers';
 import { useNavigate } from 'react-router-dom';
+import { useAuthContext } from '../context/AuthContext';
 import { addCustomer, updateCustomer } from '../firebase/customers';
 import { moveToTrash } from '../firebase/trash';
 import { toast } from 'react-hot-toast';
@@ -10,6 +11,7 @@ import { Search, UserPlus, Phone, CreditCard, ChevronRight, TrendingUp, Users, W
 
 const Customers = () => {
   const { customers, loading } = useCustomers();
+  const { isReadOnly } = useAuthContext();
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [statModal, setStatModal] = useState(null);
@@ -45,6 +47,10 @@ const Customers = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isReadOnly) {
+      toast.error('Read-only access — authorization required');
+      return;
+    }
     try {
       if (editingCustomer) {
         await updateCustomer(editingCustomer.id, formData);

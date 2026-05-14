@@ -15,6 +15,7 @@ import { toast } from 'react-hot-toast';
 
 const Bills = () => {
   const { bills, loading } = useBills();
+  const { isReadOnly } = useAuthContext();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedBill, setSelectedBill] = useState(null);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
@@ -36,6 +37,10 @@ const Bills = () => {
   );
 
   const handleDeleteConfirm = async () => {
+    if (isReadOnly) {
+      toast.error('Read-only access — authorization required');
+      return;
+    }
     if (isDeleting) {
       try {
         await cancelBill(isDeleting.id); // Cancel bill to reverse stock/balance

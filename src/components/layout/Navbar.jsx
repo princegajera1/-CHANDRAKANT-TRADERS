@@ -31,9 +31,11 @@ const Navbar = () => {
 
   return (
     <nav className={`fixed top-0 w-full z-50 transition-all duration-300 h-[72px] flex items-center border-b ${
-      isScrolled 
-        ? 'bg-[var(--nav-bg)] backdrop-blur-xl border-[var(--border-subtle)] shadow-lg' 
-        : 'bg-transparent border-transparent'
+      mobileMenuOpen
+        ? 'bg-[#080C14] border-transparent'
+        : isScrolled 
+          ? 'bg-[#080C14]/80 backdrop-blur-xl border-white/5 shadow-lg' 
+          : 'bg-transparent border-transparent'
     }`}>
       <div className="w-full max-w-[1280px] mx-auto px-[clamp(1.5rem,5vw,5rem)] flex items-center justify-between">
         
@@ -81,7 +83,7 @@ const Navbar = () => {
 
       {/* Mobile Menu */}
       {mobileMenuOpen && (
-        <div className="fixed inset-0 top-[72px] bg-[var(--bg-primary)] z-50 p-8 flex flex-col gap-8 animate-in slide-in-from-top-4 duration-300">
+        <div className="fixed inset-0 top-[72px] bg-[#080C14]/80 backdrop-blur-2xl z-[999] p-8 flex flex-col gap-8 animate-in slide-in-from-top-4 duration-300 border-t border-white/5">
           {navLinks.map((link) => (
             <Link 
               key={link.name} 

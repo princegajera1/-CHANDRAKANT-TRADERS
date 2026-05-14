@@ -5,11 +5,11 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useProducts } from '../../hooks/useProducts';
 import { useCustomers } from '../../hooks/useCustomers';
 import { useBills } from '../../hooks/useBills';
-import { Menu, Bell, Search as SearchIcon, AlertTriangle, Package, Check, User, FileText } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
+import { Menu, Bell, Search as SearchIcon, AlertTriangle, Package, Check, User, FileText, ShieldCheck, Eye, Lock } from 'lucide-react';
+import { formatDistanceToNow, format } from 'date-fns';
 
 export const Layout = ({ children }) => {
-  const { profile } = useAuthContext();
+  const { profile, isDemo, isGuest } = useAuthContext();
   const { products } = useProducts();
   const { customers } = useCustomers();
   const { bills } = useBills();
@@ -24,20 +24,28 @@ export const Layout = ({ children }) => {
 
   const lowStockProducts = products.filter(p => p.currentQty <= p.minQty);
 
-  // Notification badge logic
+  // Advanced Notification Persistence Logic
   useEffect(() => {
-    const lastSeenCount = parseInt(localStorage.getItem('lastSeenLowStockCount') || '0', 10);
-    // Show dot if the current low stock count is different/greater than what was last seen
-    if (lowStockProducts.length > 0 && lowStockProducts.length !== lastSeenCount && !showNotifications) {
+    const lastSeenCount = parseInt(localStorage.getItem('lastSeenAlertCount') || '0', 10);
+    const hasAcknowledged = localStorage.getItem('notificationsAcknowledged') === 'true';
+
+    // Show dot if count has increased or if it's the first time and they haven't seen them
+    if (lowStockProducts.length > lastSeenCount) {
       setHasUnread(true);
+      localStorage.setItem('notificationsAcknowledged', 'false');
+    } else if (lowStockProducts.length > 0 && !hasAcknowledged) {
+      setHasUnread(true);
+    } else {
+      setHasUnread(false);
     }
-  }, [lowStockProducts.length, showNotifications]);
+  }, [lowStockProducts.length]);
 
   const handleNotificationClick = () => {
     setShowNotifications(!showNotifications);
     if (!showNotifications) {
       setHasUnread(false);
-      localStorage.setItem('lastSeenLowStockCount', lowStockProducts.length.toString());
+      localStorage.setItem('lastSeenAlertCount', lowStockProducts.length.toString());
+      localStorage.setItem('notificationsAcknowledged', 'true');
     }
   };
 
@@ -58,10 +66,31 @@ export const Layout = ({ children }) => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  const hasBanner = isDemo || isGuest;
+  const bannerText = isDemo 
+    ? "🔒 RUNNING IN DEMO MODE — READ-ONLY ACCESS | SYSTEM MODIFICATIONS RESTRICTED"
+    : `👁 GUEST CLEARANCE — READ-ONLY | EXPIRES: ${(() => {
+        try {
+          if (!profile?.expiresAt) return 'N/A';
+          const date = profile.expiresAt.toDate ? profile.expiresAt.toDate() : new Date(profile.expiresAt);
+          return format(date, 'MMM dd, hh:mm a');
+        } catch (e) {
+          return 'N/A';
+        }
+      })()}`;
+
   return (
-    <div className="min-h-screen bg-[#080C14] text-white selection:bg-[#FF6A00] selection:text-white font-body overflow-x-hidden">
+    <div className="min-h-screen bg-[#080C14] text-white selection:bg-[#FF6A00] selection:text-black font-body overflow-x-hidden">
+      {hasBanner && (
+        <div className={`h-[36px] bg-[#FF6A00] text-black flex items-center justify-center gap-3 px-4 fixed top-0 left-0 right-0 z-[2000] shadow-[0_5px_20px_rgba(255,184,0,0.2)]`}>
+          <Lock size={12} className="animate-pulse" />
+          <p className="text-[0.6rem] font-black uppercase tracking-[0.25em]">
+            {bannerText}
+          </p>
+        </div>
+      )}
       {/* HEADER */}
-      <header className="h-[64px] fixed top-0 left-0 right-0 z-[1000] px-4 lg:px-8 bg-[#080C14]/90 backdrop-blur-[20px] border-b border-white/[0.05] flex items-center justify-between no-print transition-all duration-300 animate-header-entrance">
+      <header className={`h-[64px] fixed ${hasBanner ? 'top-[36px]' : 'top-0'} left-0 right-0 z-[1000] px-4 lg:px-8 bg-[#080C14]/80 backdrop-blur-xl border-b border-white/[0.03] flex items-center justify-between no-print transition-all duration-300 animate-header-entrance`}>
           
           {/* LEFT: Branding */}
           <div className="flex items-center gap-6">
@@ -73,7 +102,7 @@ export const Layout = ({ children }) => {
             </button>
             
             <div className="flex items-center flex-shrink-0 whitespace-nowrap overflow-visible group cursor-pointer" onClick={() => navigate('/dashboard')} style={{ gap: '10px' }}>
-              <div className="flex-shrink-0 w-[40px] h-[40px] rounded-[10px] bg-[#FF6A00] flex items-center justify-center text-white font-body font-[800] text-[0.85rem] shadow-[0_8px_20px_rgba(255,106,0,0.3)] group-hover:scale-105 transition-transform duration-300">CT</div>
+              <div className="flex-shrink-0 w-[40px] h-[40px] rounded-[12px] bg-[#FF6A00] flex items-center justify-center text-white font-heading font-[800] text-[1.1rem] shadow-[0_8px_25px_rgba(255,106,0,0.3)] group-hover:scale-105 transition-transform duration-300">CT</div>
               <div className="hidden sm:block">
                 <h1 className="whitespace-nowrap font-heading font-[800] text-[0.95rem] uppercase tracking-normal" style={{ overflow: 'visible', textOverflow: 'clip' }}>
                   <span className="text-white">CHANDRAKANT</span> <span className="text-[#FF6A00]">ADMIN</span>
@@ -83,12 +112,12 @@ export const Layout = ({ children }) => {
             </div>
           </div>
           
-          {/* RIGHT: Actions (Change 2 cleanup - no search) */}
+          {/* RIGHT: Actions */}
           <div className="flex items-center gap-6">
             <div className="relative" ref={notificationRef}>
               <button 
                 onClick={handleNotificationClick}
-                className={`w-11 h-11 rounded-full flex items-center justify-center transition-all duration-300 relative ${showNotifications ? 'bg-[#FF6A00]/10 text-[#FF6A00] shadow-[0_0_20px_rgba(255,106,0,0.1)]' : 'hover:bg-white/5 text-white/50 hover:text-white border border-transparent hover:border-white/10'}`}
+                className={`w-11 h-11 rounded-xl flex items-center justify-center transition-all duration-300 relative ${showNotifications ? 'bg-[#FF6A00]/10 text-[#FF6A00] shadow-[0_0_25px_rgba(255,106,0,0.1)]' : 'hover:bg-white/5 text-white/50 hover:text-white border border-transparent hover:border-white/10'}`}
               >
                 <Bell size={20} className={hasUnread ? "animate-bell-shake" : ""} />
                 {hasUnread && (
@@ -101,29 +130,29 @@ export const Layout = ({ children }) => {
 
               {/* Notifications Dropdown */}
               {showNotifications && (
-                <div className="absolute right-0 mt-4 w-[350px] rounded-[20px] shadow-[0_20px_50px_rgba(0,0,0,0.5)] border bg-[#0D1220] border-white/10 p-4 z-50 animate-dropdown-entrance">
+                <div className="absolute right-0 mt-4 w-[350px] rounded-[24px] shadow-[0_30px_60px_rgba(0,0,0,0.8)] border bg-[#121A2D] border-white/5 p-4 z-50 animate-dropdown-entrance">
                   <div className="flex items-center justify-between mb-4 px-1 pb-3 border-b border-white/5">
-                    <h4 className="text-[0.75rem] font-black uppercase tracking-[0.2em] text-[#FF6A00]">System Alerts</h4>
-                    <span className="text-[0.65rem] font-bold text-white/30 uppercase tracking-widest">{lowStockProducts.length} Items</span>
+                    <h4 className="text-[0.7rem] font-black uppercase tracking-[0.25em] text-[#FF6A00]">System Advisory</h4>
+                    <span className="text-[0.65rem] font-bold text-white/20 uppercase tracking-widest">{lowStockProducts.length} Active Protocols</span>
                   </div>
                   <div className="space-y-2 max-h-[380px] overflow-y-auto pr-1 custom-scrollbar">
                     {lowStockProducts.length > 0 ? (
                       lowStockProducts.map(p => (
-                        <div key={p.id} onClick={() => navigate(`/inventory?edit=${p.id}`)} className="p-3.5 rounded-xl flex items-start gap-4 cursor-pointer hover:bg-white/5 border border-transparent hover:border-white/5 transition-all group">
-                          <div className="w-10 h-10 rounded-lg bg-red-500/10 text-red-500 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                        <div key={p.id} onClick={() => navigate(`/inventory?edit=${p.id}`)} className="p-3.5 rounded-2xl flex items-start gap-4 cursor-pointer hover:bg-white/5 border border-transparent hover:border-white/5 transition-all group">
+                          <div className="w-10 h-10 rounded-xl bg-red-500/10 text-red-500 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
                             <AlertTriangle size={18} />
                           </div>
                           <div>
                             <p className="text-[0.85rem] font-bold text-white leading-tight mb-1 truncate max-w-[200px]">{p.name}</p>
-                            <p className="text-[0.7rem] font-black text-red-500/80 uppercase tracking-widest">Inventory Depleted: {p.currentQty}</p>
-                            <p className="text-[0.6rem] font-bold text-white/20 mt-2 uppercase tracking-tighter">Action Required Immediate</p>
+                            <p className="text-[0.65rem] font-black text-red-500/80 uppercase tracking-widest">Inventory Low: {p.currentQty}</p>
+                            <p className="text-[0.55rem] font-bold text-white/20 mt-2 uppercase tracking-widest">Action Priority High</p>
                           </div>
                         </div>
                       ))
                     ) : (
                       <div className="py-12 text-center">
-                        <Check size={32} className="mx-auto mb-4 text-[#10B981] opacity-20" />
-                        <p className="text-[0.75rem] font-black uppercase tracking-[0.2em] text-white/20">All Systems Nominal</p>
+                        <Check size={32} className="mx-auto mb-4 text-[#FF6A00] opacity-20" />
+                        <p className="text-[0.65rem] font-black uppercase tracking-[0.25em] text-white/10">Your system is running smoothly</p>
                       </div>
                     )}
                   </div>
@@ -133,14 +162,14 @@ export const Layout = ({ children }) => {
 
             <div 
               onClick={() => navigate('/settings')}
-              className="flex items-center gap-4 cursor-pointer p-1.5 pr-5 rounded-2xl hover:bg-white/5 transition-all border border-transparent hover:border-white/10 group"
+              className="flex items-center gap-4 cursor-pointer p-1 rounded-2xl hover:bg-white/5 transition-all border border-transparent hover:border-white/5 group"
             >
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#FF6A00] to-[#FF8C38] flex items-center justify-center text-white font-heading font-black text-xl shadow-[0_8px_15px_rgba(255,106,0,0.2)] group-hover:rotate-6 transition-transform">
+              <div className="w-10 h-10 rounded-xl bg-[#FF6A00] flex items-center justify-center text-white font-heading font-black text-xl shadow-[0_8px_20px_rgba(255,106,0,0.2)] group-hover:rotate-3 transition-transform">
                 {profile?.name?.[0]?.toUpperCase() || 'P'}
               </div>
-              <div className="hidden sm:block text-left">
-                <p className="text-[0.8rem] font-[600] font-body text-white leading-none mb-1.5 group-hover:text-[#FF6A00] transition-colors">{profile?.name || 'PRINCE'}</p>
-                <p className="text-[0.65rem] font-[400] font-body text-white/40 uppercase tracking-[0.08em]">SYSTEM OWNER</p>
+              <div className="hidden sm:block text-left pr-2">
+                <p className="text-[0.8rem] font-[600] font-body text-white leading-none mb-1.5 group-hover:text-[#FF6A00] transition-colors uppercase tracking-tight">{profile?.name || 'ADMIN'}</p>
+                <p className="text-[0.65rem] font-[400] font-body text-white/40 uppercase tracking-[0.08em]">{isDemo ? 'DEMO TERMINAL' : isGuest ? 'GUEST CLEARANCE' : 'SYSTEM OWNER'}</p>
               </div>
             </div>
           </div>
@@ -149,12 +178,13 @@ export const Layout = ({ children }) => {
 
       <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
       
-      <div className="lg:ml-[260px] pt-[64px] flex flex-col min-h-[100vh] relative z-10">
+      <div className={`lg:ml-[260px] ${hasBanner ? 'pt-[100px]' : 'pt-[64px]'} flex flex-col min-h-[100vh] relative z-10`}>
         
         {/* MAIN CONTENT WRAPPER */}
-        <main className="p-8 lg:p-10 flex-1 w-full relative z-10 overflow-x-hidden">
+        <main className="p-8 lg:p-12 flex-1 w-full relative z-10 overflow-x-hidden">
           {children}
         </main>
+
         
       </div>
     </div>

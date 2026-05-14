@@ -58,7 +58,7 @@ const Website = () => {
                <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
             </div>
             
-            <div className="absolute -right-10 top-1/3 z-20 bg-[#FF6A00] p-8 shadow-2xl text-white">
+            <div className="absolute right-0 lg:-right-10 bottom-0 lg:top-1/3 z-20 bg-[#FF6A00] p-6 lg:p-8 shadow-2xl text-white">
                <Truck size={32} className="mb-3" />
                <p className="text-3xl font-heading font-extrabold italic leading-none">500+</p>
                <p className="text-[0.72rem] font-heading font-bold tracking-[0.18em] uppercase opacity-80 mt-1">FLEETS MANAGED</p>
@@ -117,7 +117,7 @@ const Website = () => {
             <div className="aspect-square bg-[#0D1220] overflow-hidden border border-[var(--border-subtle)] pro-card p-0">
               <img src="https://images.pexels.com/photos/4489749/pexels-photo-4489749.jpeg?auto=compress&cs=tinysrgb&w=1200" alt="Workshop" className="w-full h-full object-cover opacity-50" />
             </div>
-            <div className="absolute -bottom-10 -right-10 bg-[#FF6A00] p-12 shadow-2xl text-white">
+            <div className="absolute -bottom-6 right-0 lg:-bottom-10 lg:-right-10 bg-[#FF6A00] p-8 lg:p-12 shadow-2xl text-white">
                <p className="text-5xl font-heading font-extrabold italic leading-none">25+</p>
                <p className="text-[0.72rem] font-heading font-bold tracking-[0.18em] uppercase opacity-80 mt-2">YEARS OF LEGACY</p>
             </div>
@@ -145,7 +145,7 @@ const Website = () => {
 
       {/* Protocol Section */}
       <section className="section-padding app-container">
-        <div className="bg-[var(--bg-card)] p-12 md:p-24 relative overflow-hidden border border-[var(--border-subtle)] shadow-xl">
+        <div className="bg-[var(--bg-card)] p-6 md:p-12 lg:p-24 relative overflow-hidden border border-[var(--border-subtle)] shadow-xl">
           <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-[#FF6A0005] rounded-full blur-[200px] -z-10"></div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-24 items-center">
             <div className="space-y-12">
@@ -157,7 +157,7 @@ const Website = () => {
                   { step: '03', title: 'Nitrogen Infusion', desc: 'Aero-grade cooling for extreme endurance.' },
                   { step: '04', title: 'Quality Cert', desc: 'Final performance verification seal.' }
                 ].map((p, i) => (
-                  <div key={i} className="flex gap-6 group cursor-pointer hover:bg-white/[0.02] p-4 -ml-4 rounded-lg transition-all duration-300 border border-transparent hover:border-[#FF6A00]/20">
+                  <div key={i} className="flex gap-4 lg:gap-6 group cursor-pointer hover:bg-white/[0.02] p-4 lg:-ml-4 rounded-lg transition-all duration-300 border border-transparent hover:border-[#FF6A00]/20">
                     <span className="text-3xl font-heading font-extrabold text-[#FF6A0033] group-hover:text-[#FF6A00] transition-colors shrink-0">{p.step}</span>
                     <div>
                       <h3 className="mb-1 italic group-hover:text-[#FF6A00] transition-colors duration-300">{p.title}</h3>

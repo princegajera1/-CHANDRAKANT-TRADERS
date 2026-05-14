@@ -6,8 +6,11 @@ import { useCustomers } from '../hooks/useCustomers';
 import { StatCard, Badge } from '../components/ui/StatCard';
 import { AnimatedNumber } from '../components/ui/AnimatedNumber';
 import { isToday } from '../utils/formatters';
-import { TrendingUp, FileText, AlertTriangle, ArrowRight, Package, ShieldCheck, BarChart3 } from 'lucide-react';
+import { TrendingUp, FileText, AlertTriangle, ArrowRight, Package, ShieldCheck, BarChart3, History, Shield, Eye, Users } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { db } from '../firebase/config';
+import { collection, query, orderBy, limit, onSnapshot, where } from 'firebase/firestore';
+import { format } from 'date-fns';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -15,8 +18,27 @@ const Dashboard = () => {
   const { products } = useProducts();
   const { customers } = useCustomers();
 
-  const [stats, setStats] = useState({ todaySales: 0, todayBills: 0, lowStock: 0, pendingUdhaar: 0 });
+  const [stats, setStats] = useState({ todaySales: 0, todayBills: 0, lowStock: 0, pendingUdhaar: 0, visitorCount: 0 });
   const [chartData, setChartData] = useState([]);
+  const [activityLogs, setActivityLogs] = useState([]);
+
+  useEffect(() => {
+    const q = query(collection(db, 'activityLogs'), orderBy('timestamp', 'desc'), limit(5));
+    const unsubscribe = onSnapshot(q, (snap) => {
+      setActivityLogs(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    });
+    
+    // Get total demo visitors
+    const qVisitors = query(collection(db, 'activityLogs'), where('role', '==', 'demo'));
+    const unsubVisitors = onSnapshot(qVisitors, (snap) => {
+      setStats(prev => ({ ...prev, visitorCount: snap.size }));
+    });
+
+    return () => {
+      unsubscribe();
+      unsubVisitors();
+    };
+  }, []);
 
   useEffect(() => {
     const todayBills = bills.filter(b => {
@@ -28,7 +50,7 @@ const Dashboard = () => {
     const lowStock = products.filter(p => p.currentQty <= p.minQty).length;
     const pendingUdhaar = customers.reduce((acc, c) => acc + (c.balance || 0), 0);
 
-    setStats({ todaySales, todayBills: todayBills.length, lowStock, pendingUdhaar });
+    setStats(prev => ({ ...prev, todaySales, todayBills: todayBills.length, lowStock, pendingUdhaar }));
 
     const last30Days = [...Array(30)].map((_, i) => {
       const d = new Date();
@@ -50,37 +72,49 @@ const Dashboard = () => {
   return (
     <div className="space-y-[1.2rem] pb-12 animate-page-entrance">
       
-      {/* SECTION 4 - DASHBOARD STAT CARDS */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-[1.2rem]">
+      {/* SECTION 4 - EXECUTIVE FISCAL METRICS */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-[1.2rem]">
         <div style={{ animation: 'cardEntrance 0.5s ease-out 0.08s both' }}>
           <StatCard 
-            title="DAILY REVENUE HUB" 
-            value={stats.todaySales} 
+            title="CUMULATIVE REVENUE" 
+            value={bills.reduce((acc, b) => acc + (b.grandTotal || 0), 0)} 
             isCurrency={true}
             icon={TrendingUp} 
-            color="green"
-            subValue="Real-time revenue capture"
+            color="orange"
+            subValue="Lifetime Fiscal Performance"
             onClick={() => navigate('/reports')}
           />
         </div>
         <div style={{ animation: 'cardEntrance 0.5s ease-out 0.16s both' }}>
           <StatCard 
-            title="TERMINAL INVOICES" 
-            value={stats.todayBills} 
-            icon={FileText} 
-            color="blue"
-            subValue="Active transactions today"
+            title="DAILY CAPTURE" 
+            value={stats.todaySales} 
+            isCurrency={true}
+            icon={BarChart3} 
+            color="green"
+            subValue="Intraday Revenue Stream"
             onClick={() => navigate('/bills')}
           />
         </div>
         <div style={{ animation: 'cardEntrance 0.5s ease-out 0.24s both' }}>
           <StatCard 
-            title="RESTOCK REGISTRY" 
-            value={stats.lowStock} 
-            icon={AlertTriangle} 
-            color={stats.lowStock > 0 ? 'red' : 'green'}
-            subValue={stats.lowStock > 0 ? 'Urgent supply replenishment' : 'Supply lines optimized'}
-            onClick={() => navigate('/inventory?filter=low-stock')}
+            title="OUTSTANDING EXPOSURE" 
+            value={stats.pendingUdhaar} 
+            isCurrency={true}
+            icon={Users} 
+            color="blue"
+            subValue="Active Credit Liabilities"
+            onClick={() => navigate('/customers')}
+          />
+        </div>
+        <div style={{ animation: 'cardEntrance 0.5s ease-out 0.32s both' }}>
+          <StatCard 
+            title="ASSET INVENTORY" 
+            value={products.length} 
+            icon={Package} 
+            color="purple"
+            subValue="Stock Unit Registry"
+            onClick={() => navigate('/inventory')}
           />
         </div>
       </div>
@@ -162,32 +196,31 @@ const Dashboard = () => {
           </div>
           
           <div className="rounded-[16px] bg-[#0D1220] border border-white/[0.07] overflow-hidden">
-            <div className="w-full overflow-x-auto">
-              <table className="w-full text-left border-collapse min-w-[600px]">
+            <div className="w-full overflow-x-hidden">
+              <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-white/[0.03]">
-                    <th className="font-body font-[600] text-[0.65rem] text-white/[0.36] uppercase tracking-[0.14em] p-[0.8rem_1.2rem] rounded-tl-[10px]">LOG ID</th>
-                    <th className="font-body font-[600] text-[0.65rem] text-white/[0.36] uppercase tracking-[0.14em] p-[0.8rem_1.2rem]">ENTITY</th>
-                    <th className="font-body font-[600] text-[0.65rem] text-white/[0.36] uppercase tracking-[0.14em] p-[0.8rem_1.2rem] text-right">VALUE</th>
-                    <th className="font-body font-[600] text-[0.65rem] text-white/[0.36] uppercase tracking-[0.14em] p-[0.8rem_1.2rem] text-center rounded-tr-[10px]">PROTOCOL</th>
+                    <th className="font-body font-[600] text-[0.65rem] text-white/[0.36] uppercase tracking-[0.14em] p-[0.7rem_1rem] rounded-tl-[10px]">LOG ID</th>
+                    <th className="font-body font-[600] text-[0.65rem] text-white/[0.36] uppercase tracking-[0.14em] p-[0.7rem_1rem]">ENTITY</th>
+                    <th className="font-body font-[600] text-[0.65rem] text-white/[0.36] uppercase tracking-[0.14em] p-[0.7rem_1rem] text-right">VALUE</th>
+                    <th className="font-body font-[600] text-[0.65rem] text-white/[0.36] uppercase tracking-[0.14em] p-[0.7rem_1rem] text-center rounded-tr-[10px]">PROTOCOL</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/[0.05]">
                   {bills.slice(0, 5).map((bill, i) => (
                     <tr key={bill.id} className="hover:bg-white/[0.03] transition-colors duration-200" style={{ animation: `rowEntrance 0.3s ease-out ${0.5 + (i*0.04)}s both` }}>
-                      <td className="p-[1rem_1.2rem] border-b border-white/[0.05]">
-                        <span className="font-body font-[700] text-[0.875rem] text-white">#{bill.billNo}</span>
+                      <td className="p-[0.8rem_1rem] border-b border-white/[0.05]">
+                        <span className="font-body font-[700] text-[0.875rem] text-white whitespace-nowrap">#{bill.billNo.toString().trim()}</span>
                       </td>
-                      <td className="p-[1rem_1.2rem] border-b border-white/[0.05]">
-                        <div className="font-body font-[600] text-[0.875rem] text-white uppercase">{bill.customerName}</div>
-                        <div className="font-body italic font-[400] text-[0.75rem] text-white/[0.42] lowercase first-letter:uppercase mt-0.5">Terminal dispatch</div>
+                      <td className="p-[0.8rem_1rem] border-b border-white/[0.05]">
+                        <div className="font-body font-[600] text-[0.875rem] text-white uppercase truncate max-w-[120px]">{bill.customerName}</div>
                       </td>
-                      <td className="p-[1rem_1.2rem] border-b border-white/[0.05] text-right">
-                        <span className="font-heading font-[700] text-[0.95rem] text-[#FF6A00]">
+                      <td className="p-[0.8rem_1rem] border-b border-white/[0.05] text-right">
+                        <span className="font-heading font-[700] text-[0.95rem] text-[#FF6A00] whitespace-nowrap">
                           <AnimatedNumber value={bill.grandTotal} prefix="₹" />
                         </span>
                       </td>
-                      <td className="p-[1rem_1.2rem] border-b border-white/[0.05] text-center">
+                      <td className="p-[0.8rem_1rem] border-b border-white/[0.05] text-center">
                         <Badge variant={bill.status === 'active' ? 'green' : 'red'} className="font-body font-[700] text-[0.62rem] uppercase tracking-[0.08em]">{bill.status}</Badge>
                       </td>
                     </tr>
@@ -199,31 +232,44 @@ const Dashboard = () => {
         </div>
 
         <div className="space-y-6" style={{ animation: 'cardEntrance 0.5s ease-out 0.56s both' }}>
-          <h3 className="admin-heading px-1">Critical Alerts</h3>
+          <div className="flex items-center justify-between px-1">
+            <h3 className="admin-heading">Recent Access Sync</h3>
+            <div className="flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
+              <span className="text-[0.6rem] font-black text-white/20 uppercase tracking-widest">Live Audit</span>
+            </div>
+          </div>
+          
           <div className="space-y-3">
-            {products.filter(p => p.currentQty <= p.minQty).slice(0, 4).map((product, i) => (
-              <div 
-                key={product.id} 
-                className="p-[1.4rem] rounded-[14px] bg-[#0D1220] border border-white/[0.07] hover:border-red-500/30 admin-card-hover cursor-pointer flex items-center justify-between group relative overflow-hidden" 
-                onClick={() => navigate(`/inventory?edit=${product.id}`)}
-                style={{ animation: `cardEntrance 0.3s ease-out ${0.6 + (i*0.08)}s both` }}
-              >
-                <div className="space-y-1 relative z-10">
-                  <p className="text-[0.85rem] font-bold text-white uppercase tracking-wide">{product.name}</p>
-                  <p className="text-[0.65rem] font-bold text-red-500 uppercase tracking-[0.15em]">Depleted: {product.currentQty} Units</p>
+            {activityLogs.map((log, i) => {
+              const isAdmin = log.role === 'admin' || log.role === 'superadmin';
+              return (
+                <div 
+                  key={log.id} 
+                  className={`p-4 rounded-xl bg-[#0D1220] border ${log.action === 'LOGIN' ? 'border-green-500/10' : 'border-red-500/10'} hover:border-white/10 transition-all flex items-center justify-between group`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${isAdmin ? 'bg-blue-400/10 text-blue-400' : 'bg-[#FF6A00]/10 text-[#FF6A00]'}`}>
+                      {isAdmin ? <Shield size={16} /> : <Eye size={16} />}
+                    </div>
+                    <div>
+                      <p className="text-[0.8rem] font-bold text-white uppercase leading-none mb-1">{log.userName}</p>
+                      <p className="text-[0.65rem] text-white/20 uppercase tracking-widest font-black">{log.role} · {log.action}</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[0.7rem] font-bold text-white/40">{log.timestamp ? format(log.timestamp.toDate(), 'hh:mm a') : 'Now'}</p>
+                    <p className="text-[0.6rem] text-white/20 uppercase tracking-tighter">Authorized</p>
+                  </div>
                 </div>
-                <div className="w-[36px] h-[36px] rounded-[10px] bg-red-500/10 text-red-500 flex items-center justify-center relative z-10 transition-transform group-hover:scale-110">
-                  <AlertTriangle size={18} strokeWidth={2.5} />
-                </div>
-                <div className="absolute -right-4 -bottom-4 opacity-[0.02] group-hover:opacity-[0.05] transition-opacity"><Package size={80} /></div>
-              </div>
-            ))}
-            {stats.lowStock === 0 && (
-              <div className="p-12 rounded-[16px] border border-dashed border-white/10 text-center space-y-3">
-                <ShieldCheck size={40} strokeWidth={1} className="mx-auto text-white/20" />
-                <p className="text-[0.65rem] font-bold uppercase tracking-[0.2em] text-white/30">Supply Lines Intact</p>
-              </div>
-            )}
+              );
+            })}
+            <button 
+              onClick={() => navigate('/settings')}
+              className="w-full py-3 border border-dashed border-white/10 rounded-xl text-[0.65rem] font-bold uppercase tracking-widest text-white/20 hover:text-[#FF6A00] hover:border-[#FF6A00]/30 transition-all"
+            >
+              View All Logs
+            </button>
           </div>
         </div>
       </div>

@@ -2,7 +2,8 @@ import {
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword,
   signOut, 
-  onAuthStateChanged 
+  onAuthStateChanged,
+  signInAnonymously 
 } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { auth, db } from './config';
@@ -35,6 +36,8 @@ export const registerUser = async (email, password, name) => {
 };
 
 export const logoutUser = () => signOut(auth);
+
+export const anonymousLogin = () => signInAnonymously(auth);
 
 export const getCurrentUserProfile = async (uid) => {
   const userDoc = await getDoc(doc(db, 'users', uid));
