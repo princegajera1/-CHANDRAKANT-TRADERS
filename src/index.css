@@ -12,13 +12,6 @@
   --font-heading: 'Barlow Condensed', sans-serif;
   --font-body: 'Inter', sans-serif;
 
-  /* GLOBAL MEDIA RESPONSIVENESS */
-  img, video {
-    max-width: 100%;
-    height: auto;
-    object-fit: cover;
-  }
-
   /* FONT SIZES */
   --fs-page-heading: clamp(1.4rem, 4vw, 1.75rem);
   --fs-page-subheading: clamp(0.7rem, 2vw, 0.78rem);

@@ -32,7 +32,7 @@ export const Sidebar = ({ isOpen, onClose }) => {
     { icon: Globe, label: 'Digital Matrix', path: '/matrix' },
     { icon: Bell, label: 'Alert Protocols', path: '/alerts' },
     { icon: Shield, label: 'Security Grid', path: '/security' },
-    { icon: ShieldCheck, label: 'Admin Network', path: '/users', superAdminOnly: true },
+    { icon: ShieldCheck, label: 'Admin Network', path: '/users' },
     { icon: History, label: 'Activity Logs', path: '/logs' },
     { icon: Database, label: 'Data Registry', path: '/registry' },
   ];

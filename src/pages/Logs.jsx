@@ -107,7 +107,11 @@ const Logs = () => {
                       </div>
                     </td>
                     <td className="px-8 py-6">
-                      <div className="inline-flex items-center px-3 py-1.5 rounded-lg bg-[#FF6A00]/10 border border-[#FF6A00]/20 text-[#FF6A00] text-[0.65rem] font-black uppercase tracking-widest">
+                      <div className={`inline-flex items-center px-3 py-1.5 rounded-lg border text-[0.65rem] font-black uppercase tracking-widest ${
+                        log.action === 'LOGIN' 
+                          ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500' 
+                          : 'bg-[#FF6A00]/10 border-[#FF6A00]/20 text-[#FF6A00]'
+                      }`}>
                         {log.action}
                       </div>
                     </td>

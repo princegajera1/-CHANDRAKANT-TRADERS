@@ -19,8 +19,17 @@ export const Layout = ({ children }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [hasUnread, setHasUnread] = useState(false);
+  const [showWelcomeModal, setShowWelcomeModal] = useState(false);
   
   const notificationRef = useRef(null);
+
+  useEffect(() => {
+    // Show welcome modal once per session after successful login
+    if (!sessionStorage.getItem('has_seen_welcome')) {
+      setShowWelcomeModal(true);
+      sessionStorage.setItem('has_seen_welcome', 'true');
+    }
+  }, []);
 
   const lowStockProducts = products.filter(p => p.currentQty <= p.minQty);
 
@@ -105,7 +114,7 @@ export const Layout = ({ children }) => {
               <div className="flex-shrink-0 w-[40px] h-[40px] rounded-[12px] bg-[#FF6A00] flex items-center justify-center text-white font-heading font-[800] text-[1.1rem] shadow-[0_8px_25px_rgba(255,106,0,0.3)] group-hover:scale-105 transition-transform duration-300">CT</div>
               <div className="hidden sm:block">
                 <h1 className="whitespace-nowrap font-heading font-[800] text-[0.95rem] uppercase tracking-normal" style={{ overflow: 'visible', textOverflow: 'clip' }}>
-                  <span className="text-white">CHANDRAKANT</span> <span className="text-[#FF6A00]">ADMIN</span>
+                  <span className="text-white">CHANDRAKANT</span> <span className="text-[#FF6A00]">{profile?.name ? profile.name.split(' ')[0] : 'ADMIN'}</span>
                 </h1>
                 <p className="text-white/[0.38] whitespace-nowrap font-body font-[500] text-[0.58rem] uppercase tracking-[0.18em]">MANAGEMENT SUITE</p>
               </div>
@@ -187,6 +196,36 @@ export const Layout = ({ children }) => {
 
         
       </div>
+
+      {showWelcomeModal && (
+        <div className="fixed inset-0 z-[3000] flex items-center justify-center p-6">
+          <div className="absolute inset-0 bg-[#080C14]/90 backdrop-blur-xl" onClick={() => setShowWelcomeModal(false)}></div>
+          <div className="relative w-full max-w-[420px] bg-[#0D121F] border border-white/10 rounded-[32px] p-10 shadow-2xl animate-[modalEntrance_0.5s_cubic-bezier(0.16,1,0.3,1)_forwards] text-center overflow-hidden">
+            {/* Background effects */}
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[150px] bg-[radial-gradient(ellipse_at_top,rgba(255,106,0,0.15)_0%,rgba(10,10,15,0)_70%)] pointer-events-none"></div>
+            
+            <div className="w-20 h-20 bg-[#FF6A00]/10 rounded-3xl flex items-center justify-center text-[#FF6A00] mx-auto mb-8 shadow-[0_0_30px_rgba(255,106,0,0.2)]">
+              <ShieldCheck size={40} />
+            </div>
+            
+            <h3 className="text-2xl font-heading font-black text-white uppercase tracking-tight leading-tight">
+              Access<br/><span className="text-[#FF6A00]">Authorized</span>
+            </h3>
+            
+            <p className="text-[0.8rem] text-white/50 font-body mt-4 leading-relaxed">
+              Welcome back to the terminal, <strong className="text-white">{profile?.name || 'Admin'}</strong>. 
+              Your security clearance level is <span className="uppercase text-[#FF6A00] font-bold tracking-widest">{profile?.role || 'Staff'}</span>.
+            </p>
+            
+            <button 
+              onClick={() => setShowWelcomeModal(false)}
+              className="w-full mt-8 h-[54px] bg-[#FF6A00] text-white font-black text-[0.75rem] uppercase tracking-[0.2em] rounded-2xl hover:bg-[#ff7b1a] transition-all shadow-xl shadow-[#FF6A0033]"
+            >
+              Enter Dashboard
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

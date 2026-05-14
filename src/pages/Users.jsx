@@ -102,17 +102,6 @@ const Users = () => {
     l.userName?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  if (!isSuperAdmin) {
-    return (
-      <div className="h-[60vh] flex flex-col items-center justify-center text-center p-8">
-        <div className="w-20 h-20 bg-red-500/10 rounded-full flex items-center justify-center text-red-500 mb-6">
-          <ShieldCheck size={40} />
-        </div>
-        <h2 className="text-2xl font-heading font-black text-white uppercase tracking-tighter mb-2">Restricted Access</h2>
-        <p className="text-white/40 max-w-md font-body">This terminal is reserved for Super Administrative personnel only. Your current clearance level does not permit entry.</p>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-8 animate-page-entrance">
@@ -179,12 +168,14 @@ const Users = () => {
                 <p className="text-2xl font-heading font-black text-white">SECURE</p>
               </div>
             </div>
-            <button 
-              onClick={() => setIsAddAdminModalOpen(true)}
-              className="bg-[#FF6A00] rounded-2xl p-6 flex items-center justify-center gap-3 text-white font-black uppercase tracking-widest hover:brightness-110 transition-all shadow-xl shadow-[#FF6A0033]"
-            >
-              <UserPlus size={24} /> New Admin Enlistment
-            </button>
+            {isSuperAdmin && (
+              <button 
+                onClick={() => setIsAddAdminModalOpen(true)}
+                className="bg-[#FF6A00] rounded-2xl p-6 flex items-center justify-center gap-3 text-white font-black uppercase tracking-widest hover:brightness-110 transition-all shadow-xl shadow-[#FF6A0033]"
+              >
+                <UserPlus size={24} /> New Admin Enlistment
+              </button>
+            )}
           </div>
 
           <div className="bg-[#0D121F] border border-white/10 rounded-[24px] overflow-hidden">
@@ -231,12 +222,14 @@ const Users = () => {
                       {admin.createdAt ? (admin.createdAt.toDate ? format(admin.createdAt.toDate(), 'MMM dd, yyyy') : format(new Date(admin.createdAt), 'MMM dd, yyyy')) : 'Pre-Launch'}
                     </td>
                     <td className="px-6 py-5 text-right">
-                      <button 
-                        onClick={() => handleDeleteAdmin(admin.id)}
-                        className="p-2 text-white/20 hover:text-red-500 transition-colors"
-                      >
-                        <Trash2 size={18} />
-                      </button>
+                      {isSuperAdmin && admin.role !== 'owner' && (
+                        <button 
+                          onClick={() => handleDeleteAdmin(admin.id)}
+                          className="p-2 text-white/20 hover:text-red-500 transition-colors"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))}

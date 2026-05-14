@@ -6,8 +6,10 @@ import { User, Lock, Check, Eye, EyeOff, ShieldCheck, PlayCircle } from 'lucide-
 import { logActivity } from '../utils/activity';
 import { collection, addDoc, serverTimestamp, query, where, getDocs } from 'firebase/firestore';
 import { auth, db } from '../firebase/config';
+import { useAuthContext } from '../context/AuthContext';
 
 const Login = () => {
+  const { user, profile, loading: authLoading } = useAuthContext();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -39,6 +41,14 @@ const Login = () => {
       }
     }
   }, []);
+
+  // Auto-redirect if already logged in
+  useEffect(() => {
+    if (!authLoading && user && profile) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [user, profile, authLoading, navigate]);
+
   const handleDemoSubmit = async (e) => {
     e.preventDefault();
     if (!demoVisitorName.trim()) {
@@ -118,6 +128,14 @@ const Login = () => {
         throw new Error('Invalid credentials. Identity not verified.');
       }
       
+      if (!profile && email !== 'demo@chandrakanttraders.com') {
+        toast.error("ACCESS DENIED: Your admin profile has been revoked or does not exist.");
+        setHasError(true);
+        setTimeout(() => setHasError(false), 500);
+        setLoading(false);
+        return;
+      }
+      
       // Save or Clear Remembered Credentials
       if (rememberMe) {
         localStorage.setItem('remembered_admin', JSON.stringify({ email, password }));
@@ -127,10 +145,7 @@ const Login = () => {
 
       await logActivity(auth.currentUser || { email, displayName: 'Provisioned Admin' }, 'LOGIN');
       toast.success('Access Granted');
-      // Force page refresh to re-initialize AuthProvider with the new DB session
-      setTimeout(() => {
-        window.location.href = '/dashboard';
-      }, 800);
+      navigate('/dashboard');
     } catch (error) {
       setHasError(true);
       if (error.code === 'auth/too-many-requests') {

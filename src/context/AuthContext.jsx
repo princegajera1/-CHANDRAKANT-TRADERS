@@ -1,7 +1,7 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { auth, db } from '../firebase/config';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, onSnapshot } from 'firebase/firestore';
 import { logActivity } from '../utils/activity';
 
 const AuthContext = createContext();
@@ -14,22 +14,40 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+    let profileUnsubscribe = null;
+
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       const isDemoSession = localStorage.getItem('is_demo_session') === 'true';
 
+      if (profileUnsubscribe) {
+        profileUnsubscribe();
+      }
+
       if (currentUser) {
-        setUser(currentUser);
-        const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
-        let profileData = userDoc.exists() ? userDoc.data() : null;
-        
         if (currentUser.email === 'demo@chandrakanttraders.com') {
-          profileData = {
-            ...profileData,
+          setUser(currentUser);
+          setProfile({
             name: localStorage.getItem('demo_visitor_name') || 'Demo Visitor',
             role: 'demo'
-          };
+          });
+          setLoading(false);
+        } else {
+          // Real-time security listener: Instantly kicks user out if SuperAdmin deletes them
+          profileUnsubscribe = onSnapshot(doc(db, 'users', currentUser.uid), async (docSnap) => {
+            if (!docSnap.exists()) {
+              // Profile has been purged! Terminate session and kick to home page instantly.
+              await signOut(auth);
+              setUser(null);
+              setProfile(null);
+              setLoading(false);
+              window.location.href = '/'; 
+            } else {
+              setUser(currentUser);
+              setProfile(docSnap.data());
+              setLoading(false);
+            }
+          });
         }
-        setProfile(profileData);
       } else if (isDemoSession) {
         // Local Demo Bypass
         setUser({ email: 'demo@chandrakanttraders.com', uid: 'demo-local-id' });
@@ -37,14 +55,18 @@ export const AuthProvider = ({ children }) => {
           name: localStorage.getItem('demo_visitor_name') || 'Demo Visitor',
           role: 'demo'
         });
+        setLoading(false);
       } else {
         setUser(null);
         setProfile(null);
+        setLoading(false);
       }
-      setLoading(false);
     });
 
-    return unsubscribe;
+    return () => {
+      if (profileUnsubscribe) profileUnsubscribe();
+      unsubscribe();
+    };
   }, []);
 
   const logout = async () => {
