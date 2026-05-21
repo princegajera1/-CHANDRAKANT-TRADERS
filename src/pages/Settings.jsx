@@ -12,6 +12,7 @@ import { useCustomers } from '../hooks/useCustomers';
 import { useBills } from '../hooks/useBills';
 import { useSuppliers } from '../hooks/useSuppliers';
 import { Modal } from '../components/ui/Modal';
+import { validateGSTIN, validatePAN, extractPANFromGSTIN } from '../utils/gstValidation';
 
 const Settings = () => {
   const { isSuperAdmin, isDemo, isReadOnly, user: currentUser } = useAuthContext();
@@ -28,8 +29,16 @@ const Settings = () => {
   const [settings, setSettings] = useState({
     name: 'CHANDRAKANT TRADERS', 
     phone: '+91 99240 58859', 
-    address: 'Savarkundla, Gujarat', 
+    email: '',
+    addressLine1: 'Shop No. 27/28/29, Taluka Panchayat Shopping Center', 
+    addressLine2: 'Mahuva Road',
+    city: 'Savarkundla',
+    district: 'Amreli',
+    pin: '364515',
     gstNo: '24ABTPM0428L1ZY', 
+    panNo: '',
+    state: 'Gujarat',
+    stateCode: '24',
     upiId: 'traders@upi', 
     lowStockThreshold: 5,
     websiteUrl: '',
@@ -38,8 +47,19 @@ const Settings = () => {
     whatsapp: '',
     alertLowStock: true,
     alertNewInquiry: true,
-    alertDailyRevenue: true
+    alertDailyRevenue: true,
+    bankName: '',
+    bankAccount: '',
+    bankIfsc: '',
+    bankBranch: '',
+    invoicePrefix: '#',
+    startingInvoiceNo: 1,
+    defaultGst: 5,
+    defaultPaymentMode: 'Cash',
+    termsConditions: '1. Goods once sold will not be taken back.\n2. Our risk and responsibility ceases as soon as the goods leave our premises.\n3. Subject to Savarkundla Jurisdiction only. E.&O.E.'
   });
+  
+  const [formErrors, setFormErrors] = useState({});
   const [passwords, setPasswords] = useState({ current: '', new: '', confirm: '' });
   const [showPasswords, setShowPasswords] = useState({ current: false, new: false, confirm: false });
   const [confirmClear, setConfirmClear] = useState('');
@@ -53,7 +73,11 @@ const Settings = () => {
     const fetchSettings = async () => {
       try {
         const snap = await getDoc(doc(db, 'settings', 'shop'));
-        if (snap.exists()) setSettings(snap.data());
+        if (snap.exists()) {
+          const data = snap.data();
+          setSettings({ ...settings, ...data });
+          localStorage.setItem('shopSettings', JSON.stringify(data));
+        }
       } catch (err) {
         toast.error("Failed to load settings");
       } finally {
@@ -63,7 +87,6 @@ const Settings = () => {
     fetchSettings();
   }, []);
 
-  // Admin Network Listener
   useEffect(() => {
     const q = query(collection(db, 'admins'), orderBy('addedAt', 'desc'));
     const unsubscribe = onSnapshot(q, (snap) => {
@@ -72,7 +95,6 @@ const Settings = () => {
     return unsubscribe;
   }, []);
 
-  // Activity Logs Listener
   useEffect(() => {
     if (!isSuperAdmin) return;
     const q = query(collection(db, 'activityLogs'), orderBy('timestamp', 'desc'), limit(100));
@@ -81,6 +103,22 @@ const Settings = () => {
     });
     return unsubscribe;
   }, [isSuperAdmin]);
+
+  const handleStateChange = (e) => {
+    const stateName = e.target.value;
+    const codeMap = { 'Gujarat': '24', 'Maharashtra': '27', 'Rajasthan': '08', 'Delhi': '07' }; // simplified map
+    setSettings({...settings, state: stateName, stateCode: codeMap[stateName] || ''});
+  };
+
+  const handleGSTINChange = (e) => {
+    const val = e.target.value.toUpperCase();
+    const newSettings = { ...settings, gstNo: val };
+    if (val.length >= 15) {
+      newSettings.panNo = extractPANFromGSTIN(val);
+    }
+    setSettings(newSettings);
+    setFormErrors({...formErrors, gstNo: null});
+  };
 
   const handleSave = async () => {
     if (isReadOnly) {
@@ -110,11 +148,31 @@ const Settings = () => {
       return;
     }
 
+    if (activeTab === 'shop') {
+      const errors = {};
+      if (settings.gstNo && !validateGSTIN(settings.gstNo)) errors.gstNo = 'Invalid GSTIN format';
+      if (settings.panNo && !validatePAN(settings.panNo)) errors.panNo = 'Invalid PAN format';
+      
+      if (Object.keys(errors).length > 0) {
+        setFormErrors(errors);
+        toast.error('Please fix validation errors');
+        return;
+      }
+    }
+
     if (activeTab === 'data') return; // Handled separately
 
     setSaving(true);
     try {
-      await updateDoc(doc(db, 'settings', 'shop'), settings);
+      // Re-construct full address for backward compatibility
+      const fullAddress = `${settings.addressLine1}, ${settings.addressLine2 ? settings.addressLine2 + ', ' : ''}${settings.city}, Dist. ${settings.district} - ${settings.pin}`;
+      
+      const dataToSave = {
+        ...settings,
+        address: fullAddress
+      };
+      await updateDoc(doc(db, 'settings', 'shop'), dataToSave);
+      localStorage.setItem('shopSettings', JSON.stringify(dataToSave));
       toast.success("Infrastructure parameters updated");
     } catch (err) {
       toast.error("Update failed");
@@ -130,11 +188,6 @@ const Settings = () => {
     
     setSaving(true);
     try {
-      // In a real production app, you'd use a Cloud Function to create users.
-      // Here, we'll add to Firestore and assume the Super Admin creates the Auth account manually 
-      // or we use a secondary auth instance if configured.
-      // For this implementation, we add to the 'admins' collection.
-      
       await addDoc(collection(db, 'admins'), {
         email: newAdmin.email,
         name: newAdmin.name,
@@ -223,7 +276,7 @@ const Settings = () => {
         {/* Navigation Sidebar */}
         <div className="lg:col-span-1 space-y-2 animate-dropdown-entrance">
           {[
-            { id: 'shop', icon: Store, label: 'Shop Profile' },
+            { id: 'shop', icon: Store, label: 'Shop Configuration' },
             { id: 'digital', icon: Globe, label: 'Digital Matrix' },
             { id: 'alerts', icon: Bell, label: 'Alert Protocols' },
             { id: 'security', icon: Shield, label: 'Security Grid' },
@@ -250,71 +303,164 @@ const Settings = () => {
         <div className="lg:col-span-3 space-y-8 animate-page-entrance" style={{ animationDelay: '0.2s' }}>
           {activeTab === 'shop' && (
             <div className="p-10 rounded-[32px] bg-[#0D1220] border border-white/[0.05] space-y-10">
+              
+              {/* SECTION 1 — Shop Identity */}
               <div className="space-y-8">
                 <div className="flex items-center gap-3 border-b border-white/5 pb-6">
                   <Store size={20} className="text-[#FF6A00]" />
-                  <h3 className="font-body font-[700] text-[0.72rem] text-white/[0.50] uppercase tracking-[0.18em]">Professional Identity</h3>
+                  <h3 className="font-body font-[700] text-[0.72rem] text-white/[0.50] uppercase tracking-[0.18em]">SECTION 1 — Shop Identity</h3>
                 </div>
-                
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  <div className="space-y-2">
-                    <label className="font-body font-[600] text-[0.65rem] text-white/[0.46] uppercase tracking-[0.12em] ml-1">Trade Designation</label>
-                    <input 
-                      value={settings.name} 
-                      onChange={e => setSettings({...settings, name: e.target.value})} 
-                      className="w-full h-[52px] px-5 rounded-xl text-[0.875rem] font-body font-[400] bg-[#080C14] border border-white/10 text-white outline-none focus:border-[#FF6A00] transition-all admin-input-focus placeholder:font-body placeholder:italic placeholder:text-[0.875rem] placeholder:text-white/20"
-                    />
+                  <div className="md:col-span-2 space-y-2">
+                    <label className="font-body font-[600] text-[0.65rem] text-white/[0.46] uppercase tracking-[0.12em] ml-1">Shop Name</label>
+                    <input value={settings.name} onChange={e => setSettings({...settings, name: e.target.value})} className="w-full h-[52px] px-5 rounded-xl text-[0.875rem] font-body font-[400] bg-[#080C14] border border-white/10 text-white outline-none focus:border-[#FF6A00] transition-all" />
                   </div>
                   <div className="space-y-2">
-                    <label className="font-body font-[600] text-[0.65rem] text-white/[0.46] uppercase tracking-[0.12em] ml-1">Terminal Hotline</label>
-                    <input 
-                      value={settings.phone} 
-                      onChange={e => setSettings({...settings, phone: e.target.value})} 
-                      className="w-full h-[52px] px-5 rounded-xl text-[0.875rem] font-body font-[400] bg-[#080C14] border border-white/10 text-white outline-none focus:border-[#FF6A00] transition-all admin-input-focus placeholder:font-body placeholder:italic placeholder:text-[0.875rem] placeholder:text-white/20"
-                    />
+                    <label className="font-body font-[600] text-[0.65rem] text-white/[0.46] uppercase tracking-[0.12em] ml-1">Address Line 1</label>
+                    <input value={settings.addressLine1} onChange={e => setSettings({...settings, addressLine1: e.target.value})} className="w-full h-[52px] px-5 rounded-xl text-[0.875rem] font-body font-[400] bg-[#080C14] border border-white/10 text-white outline-none focus:border-[#FF6A00] transition-all" />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="font-body font-[600] text-[0.65rem] text-white/[0.46] uppercase tracking-[0.12em] ml-1">Address Line 2</label>
+                    <input value={settings.addressLine2} onChange={e => setSettings({...settings, addressLine2: e.target.value})} className="w-full h-[52px] px-5 rounded-xl text-[0.875rem] font-body font-[400] bg-[#080C14] border border-white/10 text-white outline-none focus:border-[#FF6A00] transition-all" />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="font-body font-[600] text-[0.65rem] text-white/[0.46] uppercase tracking-[0.12em] ml-1">City</label>
+                    <input value={settings.city} onChange={e => setSettings({...settings, city: e.target.value})} className="w-full h-[52px] px-5 rounded-xl text-[0.875rem] font-body font-[400] bg-[#080C14] border border-white/10 text-white outline-none focus:border-[#FF6A00] transition-all" />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="font-body font-[600] text-[0.65rem] text-white/[0.46] uppercase tracking-[0.12em] ml-1">District</label>
+                    <input value={settings.district} onChange={e => setSettings({...settings, district: e.target.value})} className="w-full h-[52px] px-5 rounded-xl text-[0.875rem] font-body font-[400] bg-[#080C14] border border-white/10 text-white outline-none focus:border-[#FF6A00] transition-all" />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="font-body font-[600] text-[0.65rem] text-white/[0.46] uppercase tracking-[0.12em] ml-1">PIN</label>
+                    <input value={settings.pin} onChange={e => setSettings({...settings, pin: e.target.value})} className="w-full h-[52px] px-5 rounded-xl text-[0.875rem] font-body font-[400] bg-[#080C14] border border-white/10 text-white outline-none focus:border-[#FF6A00] transition-all" />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="font-body font-[600] text-[0.65rem] text-white/[0.46] uppercase tracking-[0.12em] ml-1">Mobile Number</label>
+                    <input value={settings.phone} onChange={e => setSettings({...settings, phone: e.target.value})} className="w-full h-[52px] px-5 rounded-xl text-[0.875rem] font-body font-[400] bg-[#080C14] border border-white/10 text-white outline-none focus:border-[#FF6A00] transition-all" />
                   </div>
                   <div className="md:col-span-2 space-y-2">
-                    <label className="font-body font-[600] text-[0.65rem] text-white/[0.46] uppercase tracking-[0.12em] ml-1">Operational Coordinates</label>
-                    <input 
-                      value={settings.address} 
-                      onChange={e => setSettings({...settings, address: e.target.value})} 
-                      className="w-full h-[52px] px-5 rounded-xl text-[0.875rem] font-body font-[400] bg-[#080C14] border border-white/10 text-white outline-none focus:border-[#FF6A00] transition-all admin-input-focus placeholder:font-body placeholder:italic placeholder:text-[0.875rem] placeholder:text-white/20"
-                    />
+                    <label className="font-body font-[600] text-[0.65rem] text-white/[0.46] uppercase tracking-[0.12em] ml-1">Email (Optional)</label>
+                    <input value={settings.email} onChange={e => setSettings({...settings, email: e.target.value})} className="w-full h-[52px] px-5 rounded-xl text-[0.875rem] font-body font-[400] bg-[#080C14] border border-white/10 text-white outline-none focus:border-[#FF6A00] transition-all" />
                   </div>
+                </div>
+              </div>
+
+              {/* SECTION 2 — Tax & Legal */}
+              <div className="space-y-8 pt-10 border-t border-white/5">
+                <div className="flex items-center gap-3 border-b border-white/5 pb-6">
+                  <Shield size={20} className="text-[#FF6A00]" />
+                  <h3 className="font-body font-[700] text-[0.72rem] text-white/[0.50] uppercase tracking-[0.18em]">SECTION 2 — Tax & Legal</h3>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <div className="space-y-2">
-                    <label className="font-body font-[600] text-[0.65rem] text-white/[0.46] uppercase tracking-[0.12em] ml-1">Tax Identity (GSTIN)</label>
+                    <label className="font-body font-[600] text-[0.65rem] text-white/[0.46] uppercase tracking-[0.12em] ml-1">GSTIN (15-char)</label>
                     <input 
                       value={settings.gstNo} 
-                      onChange={e => setSettings({...settings, gstNo: e.target.value})} 
-                      className="w-full h-[52px] px-5 rounded-xl text-[0.875rem] font-body font-[400] uppercase bg-[#080C14] border border-white/10 text-white outline-none focus:border-[#FF6A00] transition-all admin-input-focus placeholder:font-body placeholder:italic placeholder:text-[0.875rem] placeholder:text-white/20"
+                      onChange={handleGSTINChange} 
+                      className={`w-full h-[52px] px-5 rounded-xl text-[0.875rem] font-body font-[400] uppercase bg-[#080C14] border ${formErrors.gstNo ? 'border-red-500' : 'border-white/10'} text-white outline-none focus:border-[#FF6A00] transition-all`}
                     />
+                    {formErrors.gstNo && <p className="text-red-500 text-[0.65rem] ml-1">{formErrors.gstNo}</p>}
                   </div>
                   <div className="space-y-2">
-                    <label className="font-body font-[600] text-[0.65rem] text-white/[0.46] uppercase tracking-[0.12em] ml-1">Digital Settlement (UPI)</label>
+                    <label className="font-body font-[600] text-[0.65rem] text-white/[0.46] uppercase tracking-[0.12em] ml-1">PAN Number (10-char)</label>
                     <input 
-                      value={settings.upiId} 
-                      onChange={e => setSettings({...settings, upiId: e.target.value})} 
-                      className="w-full h-[52px] px-5 rounded-xl text-[0.875rem] font-body font-[400] bg-[#080C14] border border-white/10 text-white outline-none focus:border-[#FF6A00] transition-all admin-input-focus placeholder:font-body placeholder:italic placeholder:text-[0.875rem] placeholder:text-white/20"
+                      value={settings.panNo} 
+                      onChange={e => { setSettings({...settings, panNo: e.target.value.toUpperCase()}); setFormErrors({...formErrors, panNo: null}); }} 
+                      className={`w-full h-[52px] px-5 rounded-xl text-[0.875rem] font-body font-[400] uppercase bg-[#080C14] border ${formErrors.panNo ? 'border-red-500' : 'border-white/10'} text-white outline-none focus:border-[#FF6A00] transition-all`}
+                    />
+                    {formErrors.panNo && <p className="text-red-500 text-[0.65rem] ml-1">{formErrors.panNo}</p>}
+                  </div>
+                  <div className="space-y-2">
+                    <label className="font-body font-[600] text-[0.65rem] text-white/[0.46] uppercase tracking-[0.12em] ml-1">State</label>
+                    <select 
+                      value={settings.state} 
+                      onChange={handleStateChange} 
+                      className="w-full h-[52px] px-5 rounded-xl text-[0.875rem] font-body font-[400] bg-[#080C14] border border-white/10 text-white outline-none focus:border-[#FF6A00] transition-all"
+                    >
+                      <option value="Gujarat">Gujarat</option>
+                      <option value="Maharashtra">Maharashtra</option>
+                      <option value="Rajasthan">Rajasthan</option>
+                      <option value="Delhi">Delhi</option>
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="font-body font-[600] text-[0.65rem] text-white/[0.46] uppercase tracking-[0.12em] ml-1">State Code</label>
+                    <input 
+                      value={settings.stateCode} 
+                      readOnly
+                      className="w-full h-[52px] px-5 rounded-xl text-[0.875rem] font-body font-[400] bg-[#080C14]/50 border border-white/5 text-white/50 outline-none transition-all cursor-not-allowed"
                     />
                   </div>
                 </div>
               </div>
 
+              {/* SECTION 3 — Bank Details */}
               <div className="space-y-8 pt-10 border-t border-white/5">
                 <div className="flex items-center gap-3 border-b border-white/5 pb-6">
-                  <Bell size={20} className="text-[#FF6A00]" />
-                  <h3 className="font-body font-[700] text-[0.72rem] text-white/[0.50] uppercase tracking-[0.18em]">Threshold Protocols</h3>
+                  <Database size={20} className="text-[#FF6A00]" />
+                  <h3 className="font-body font-[700] text-[0.72rem] text-white/[0.50] uppercase tracking-[0.18em]">SECTION 3 — Bank Details</h3>
                 </div>
-                <div className="max-w-xs space-y-2">
-                  <label className="font-body font-[600] text-[0.65rem] text-white/[0.46] uppercase tracking-[0.12em] ml-1">Critical Stock Alarm (Units)</label>
-                  <input 
-                    type="number"
-                    value={settings.lowStockThreshold} 
-                    onChange={e => setSettings({...settings, lowStockThreshold: Number(e.target.value)})} 
-                    className="w-full h-[52px] px-5 rounded-xl text-[0.875rem] font-body font-[400] bg-[#080C14] border border-white/10 text-white outline-none focus:border-[#FF6A00] transition-all admin-input-focus placeholder:font-body placeholder:italic placeholder:text-[0.875rem] placeholder:text-white/20"
-                  />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="space-y-2">
+                    <label className="font-body font-[600] text-[0.65rem] text-white/[0.46] uppercase tracking-[0.12em] ml-1">Bank Name</label>
+                    <input value={settings.bankName || ''} onChange={e => setSettings({...settings, bankName: e.target.value})} className="w-full h-[52px] px-5 rounded-xl text-[0.875rem] font-body font-[400] bg-[#080C14] border border-white/10 text-white outline-none focus:border-[#FF6A00] transition-all" />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="font-body font-[600] text-[0.65rem] text-white/[0.46] uppercase tracking-[0.12em] ml-1">Account Number</label>
+                    <input value={settings.bankAccount || ''} onChange={e => setSettings({...settings, bankAccount: e.target.value})} className="w-full h-[52px] px-5 rounded-xl text-[0.875rem] font-body font-[400] bg-[#080C14] border border-white/10 text-white outline-none focus:border-[#FF6A00] transition-all" />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="font-body font-[600] text-[0.65rem] text-white/[0.46] uppercase tracking-[0.12em] ml-1">IFSC Code</label>
+                    <input value={settings.bankIfsc || ''} onChange={e => setSettings({...settings, bankIfsc: e.target.value})} className="w-full h-[52px] px-5 rounded-xl text-[0.875rem] font-body font-[400] uppercase bg-[#080C14] border border-white/10 text-white outline-none focus:border-[#FF6A00] transition-all" />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="font-body font-[600] text-[0.65rem] text-white/[0.46] uppercase tracking-[0.12em] ml-1">Branch Name</label>
+                    <input value={settings.bankBranch || ''} onChange={e => setSettings({...settings, bankBranch: e.target.value})} className="w-full h-[52px] px-5 rounded-xl text-[0.875rem] font-body font-[400] bg-[#080C14] border border-white/10 text-white outline-none focus:border-[#FF6A00] transition-all" />
+                  </div>
                 </div>
               </div>
+
+              {/* SECTION 4 — Invoice Preferences */}
+              <div className="space-y-8 pt-10 border-t border-white/5">
+                <div className="flex items-center gap-3 border-b border-white/5 pb-6">
+                  <CheckCircle size={20} className="text-[#FF6A00]" />
+                  <h3 className="font-body font-[700] text-[0.72rem] text-white/[0.50] uppercase tracking-[0.18em]">SECTION 4 — Invoice Preferences</h3>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="space-y-2">
+                    <label className="font-body font-[600] text-[0.65rem] text-white/[0.46] uppercase tracking-[0.12em] ml-1">Invoice Prefix</label>
+                    <input value={settings.invoicePrefix || ''} onChange={e => setSettings({...settings, invoicePrefix: e.target.value})} className="w-full h-[52px] px-5 rounded-xl text-[0.875rem] font-body font-[400] bg-[#080C14] border border-white/10 text-white outline-none focus:border-[#FF6A00] transition-all" />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="font-body font-[600] text-[0.65rem] text-white/[0.46] uppercase tracking-[0.12em] ml-1">Starting Invoice Number</label>
+                    <input type="number" value={settings.startingInvoiceNo || 1} onChange={e => setSettings({...settings, startingInvoiceNo: Number(e.target.value)})} className="w-full h-[52px] px-5 rounded-xl text-[0.875rem] font-body font-[400] bg-[#080C14] border border-white/10 text-white outline-none focus:border-[#FF6A00] transition-all" />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="font-body font-[600] text-[0.65rem] text-white/[0.46] uppercase tracking-[0.12em] ml-1">Default GST Rate</label>
+                    <select value={settings.defaultGst || 5} onChange={e => setSettings({...settings, defaultGst: Number(e.target.value)})} className="w-full h-[52px] px-5 rounded-xl text-[0.875rem] font-body font-[400] bg-[#080C14] border border-white/10 text-white outline-none focus:border-[#FF6A00] transition-all">
+                      <option value={5}>5%</option>
+                      <option value={12}>12%</option>
+                      <option value={18}>18%</option>
+                      <option value={28}>28%</option>
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="font-body font-[600] text-[0.65rem] text-white/[0.46] uppercase tracking-[0.12em] ml-1">Default Payment Mode</label>
+                    <select value={settings.defaultPaymentMode || 'Cash'} onChange={e => setSettings({...settings, defaultPaymentMode: e.target.value})} className="w-full h-[52px] px-5 rounded-xl text-[0.875rem] font-body font-[400] bg-[#080C14] border border-white/10 text-white outline-none focus:border-[#FF6A00] transition-all">
+                      <option value="Cash">Cash</option>
+                      <option value="Online">Online</option>
+                      <option value="Credit">Credit</option>
+                      <option value="Cheque">Cheque</option>
+                    </select>
+                  </div>
+                  <div className="md:col-span-2 space-y-2">
+                    <label className="font-body font-[600] text-[0.65rem] text-white/[0.46] uppercase tracking-[0.12em] ml-1">Terms & Conditions</label>
+                    <textarea value={settings.termsConditions} onChange={e => setSettings({...settings, termsConditions: e.target.value})} className="w-full h-[120px] p-5 rounded-xl text-[0.875rem] font-body font-[400] bg-[#080C14] border border-white/10 text-white outline-none focus:border-[#FF6A00] transition-all resize-none" />
+                  </div>
+                </div>
+              </div>
+
             </div>
           )}
 

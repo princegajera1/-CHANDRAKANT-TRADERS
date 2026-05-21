@@ -49,19 +49,25 @@ const Website = () => {
           </div>
 
           <div className="relative hidden lg:block">
-            <div className="aspect-[4/5] bg-[#0D1220] rounded-none overflow-hidden border border-[var(--border-subtle)] relative z-10 pro-card p-0">
+            {/* Glow effect behind image */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80%] h-[80%] bg-[#FF6A00] blur-[120px] opacity-20 z-0"></div>
+            
+            <div className="aspect-[4/5] bg-[#0D1220] rounded-2xl overflow-hidden border border-white/10 relative z-10 shadow-2xl group">
                <img 
                  src="https://images.pexels.com/photos/190537/pexels-photo-190537.jpeg?auto=compress&cs=tinysrgb&w=1200" 
                  alt="Performance Hub" 
-                 className="w-full h-full object-cover opacity-60"
+                 className="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-700"
                />
-               <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
+               <div className="absolute inset-0 bg-gradient-to-t from-[#080C14] via-transparent to-transparent opacity-80"></div>
             </div>
             
-            <div className="absolute right-0 lg:-right-10 bottom-0 lg:top-1/3 z-20 bg-[#FF6A00] p-6 lg:p-8 shadow-2xl text-white">
-               <Truck size={32} className="mb-3" />
-               <p className="text-3xl font-heading font-extrabold italic leading-none">500+</p>
-               <p className="text-[0.72rem] font-heading font-bold tracking-[0.18em] uppercase opacity-80 mt-1">FLEETS MANAGED</p>
+            {/* Floating Stats Card */}
+            <div className="absolute right-0 lg:-right-12 bottom-0 lg:bottom-auto lg:top-1/3 z-20 bg-gradient-to-br from-[#FF6A00] to-[#E65C00] p-6 lg:p-8 rounded-2xl shadow-[0_20px_50px_rgba(255,106,0,0.3)] border border-white/20 text-white flex flex-col items-center text-center transform hover:-translate-y-2 transition-transform duration-500 w-48 lg:w-56">
+               <div className="w-14 h-14 bg-white/20 rounded-full flex items-center justify-center mb-4 backdrop-blur-sm shadow-inner border border-white/30">
+                  <Truck size={28} className="text-white" />
+               </div>
+               <p className="text-4xl lg:text-5xl font-heading font-extrabold italic leading-none mb-2">500+</p>
+               <p className="text-[0.7rem] lg:text-[0.75rem] font-heading font-bold tracking-[0.2em] uppercase opacity-90">FLEETS MANAGED</p>
             </div>
           </div>
         </div>
@@ -114,12 +120,21 @@ const Website = () => {
       <section id="about" className="section-padding app-container">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-24 items-center">
           <div className="relative">
-            <div className="aspect-square bg-[#0D1220] overflow-hidden border border-[var(--border-subtle)] pro-card p-0">
-              <img src="https://images.pexels.com/photos/4489749/pexels-photo-4489749.jpeg?auto=compress&cs=tinysrgb&w=1200" alt="Workshop" className="w-full h-full object-cover opacity-50" />
+            {/* Glow effect behind image */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80%] h-[80%] bg-[#FF6A00] blur-[120px] opacity-20 z-0"></div>
+            
+            <div className="aspect-square bg-[#0D1220] rounded-2xl overflow-hidden border border-white/10 relative z-10 shadow-2xl group">
+              <img src="https://images.pexels.com/photos/4489749/pexels-photo-4489749.jpeg?auto=compress&cs=tinysrgb&w=1200" alt="Workshop" className="w-full h-full object-cover opacity-60 group-hover:scale-105 transition-transform duration-700" />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#080C14] via-transparent to-transparent opacity-80"></div>
             </div>
-            <div className="absolute -bottom-6 right-0 lg:-bottom-10 lg:-right-10 bg-[#FF6A00] p-8 lg:p-12 shadow-2xl text-white">
-               <p className="text-5xl font-heading font-extrabold italic leading-none">25+</p>
-               <p className="text-[0.72rem] font-heading font-bold tracking-[0.18em] uppercase opacity-80 mt-2">YEARS OF LEGACY</p>
+            
+            {/* Floating Legacy Card */}
+            <div className="absolute -bottom-6 right-0 lg:-bottom-10 lg:-right-10 z-20 bg-gradient-to-br from-[#FF6A00] to-[#E65C00] p-6 lg:p-10 rounded-2xl shadow-[0_20px_50px_rgba(255,106,0,0.3)] border border-white/20 text-white flex flex-col items-center text-center transform hover:-translate-y-2 transition-transform duration-500 w-48 lg:w-64">
+               <div className="w-14 h-14 bg-white/20 rounded-full flex items-center justify-center mb-4 backdrop-blur-sm shadow-inner border border-white/30">
+                  <Star size={28} className="text-white fill-white" />
+               </div>
+               <p className="text-5xl lg:text-6xl font-heading font-extrabold italic leading-none mb-2">25+</p>
+               <p className="text-[0.7rem] lg:text-[0.8rem] font-heading font-bold tracking-[0.2em] uppercase opacity-90">YEARS OF LEGACY</p>
             </div>
           </div>
           <div className="space-y-10">
