@@ -70,7 +70,10 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const logout = async () => {
-    if (user) await logActivity(user, 'LOGOUT');
+    if (user) {
+      const displayName = profile?.name || user.displayName || user.email.split('@')[0];
+      await logActivity({ ...user, displayName }, 'LOGOUT');
+    }
     localStorage.removeItem('demo_visitor_name');
     localStorage.removeItem('is_demo_session');
     localStorage.removeItem('db_admin_session');

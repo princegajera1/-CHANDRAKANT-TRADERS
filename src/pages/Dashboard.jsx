@@ -13,6 +13,29 @@ import { collection, query, orderBy, limit, onSnapshot, where } from 'firebase/f
 import { format } from 'date-fns';
 import gsap from 'gsap';
 
+const formatLogTime = (timestamp) => {
+  if (!timestamp) return 'Now';
+  const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+  const now = new Date();
+  
+  // Reset hours to compare dates only
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+  
+  const compareDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  
+  const timeStr = format(date, 'hh:mm a');
+  
+  if (compareDate.getTime() === today.getTime()) {
+    return `Today, ${timeStr}`;
+  } else if (compareDate.getTime() === yesterday.getTime()) {
+    return `Yesterday, ${timeStr}`;
+  } else {
+    return `${format(date, 'dd MMM')}, ${timeStr}`;
+  }
+};
+
 const Dashboard = () => {
   const navigate = useNavigate();
   const { bills } = useBills();
@@ -325,7 +348,7 @@ const Dashboard = () => {
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-[0.7rem] font-bold text-[#8899A6]">{log.timestamp ? format(log.timestamp.toDate(), 'hh:mm a') : 'Now'}</p>
+                    <p className="text-[0.7rem] font-bold text-[#8899A6]">{formatLogTime(log.timestamp)}</p>
                     <p className="text-[0.6rem] text-white/20 uppercase tracking-tighter">Authorized</p>
                   </div>
                 </div>

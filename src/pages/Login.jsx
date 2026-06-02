@@ -143,7 +143,8 @@ const Login = () => {
         localStorage.removeItem('remembered_admin');
       }
 
-      await logActivity(auth.currentUser || { email, displayName: 'Provisioned Admin' }, 'LOGIN');
+      const displayName = profile?.name || user.displayName || user.email.split('@')[0];
+      await logActivity({ ...user, displayName }, 'LOGIN');
       toast.success('Access Granted');
       navigate('/dashboard');
     } catch (error) {
