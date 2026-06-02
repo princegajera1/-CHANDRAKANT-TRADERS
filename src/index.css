@@ -578,7 +578,9 @@ select option {
 h1.italic { font-family: var(--font-heading); font-size: clamp(3rem, 7vw, 6.5rem); font-weight: 900; font-style: italic; line-height: 1.05; color: #FFFFFF !important; }
 h2.italic { font-family: var(--font-heading); font-size: clamp(2rem, 4vw, 3.8rem); font-weight: 800; font-style: italic; line-height: 1.1; color: #FFFFFF !important; }
 p { max-width: 60ch; }
-.label-tag { font-size: 0.72rem; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase; color: var(--orange-primary); line-height: 1.2; }
+.print-only-container {
+  display: none !important;
+}
 
 /* PRINT STYLES FOR TAX INVOICE (CHANGE 9) */
 @media print {
@@ -592,6 +594,11 @@ p { max-width: 60ch; }
     background: white !important;
     color: black !important;
     font-family: 'Inter', sans-serif !important;
+  }
+
+  .print-only-container {
+    display: block !important;
+    visibility: visible !important;
   }
 
   #bill-print-area, #bill-print-area * {

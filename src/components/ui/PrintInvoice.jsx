@@ -75,7 +75,7 @@ export const PrintInvoice = ({ bill, shopSettings, safeFormatDate, amountToWords
         }
       `}</style>
 
-      <div className="hidden print:block w-full" style={{ fontFamily: "'Times New Roman', Times, serif", color: '#000' }}>
+      <div className="print-only-container w-full" style={{ fontFamily: "'Times New Roman', Times, serif", color: '#000' }}>
         <div id="bill-print-area">
           
           {/* Main Wrapper with 1px solid black border */}
