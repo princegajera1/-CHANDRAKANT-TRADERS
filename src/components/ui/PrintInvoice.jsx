@@ -68,9 +68,9 @@ export const PrintInvoice = ({ bill, shopSettings, safeFormatDate, amountToWords
             color: black !important;
             box-sizing: border-box !important;
           }
-          /* Ensure zero top margin */
+          /* Ensure proper top margin to prevent TAX INVOICE badge clipping */
           #bill-print-area > div {
-            margin-top: 0 !important;
+            margin-top: 16px !important;
           }
         }
       `}</style>

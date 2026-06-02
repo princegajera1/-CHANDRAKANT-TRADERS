@@ -450,7 +450,10 @@ const NewBill = () => {
                 onFocus={() => setShowProductResults(true)}
               />
               {showProductResults && filteredProducts.length > 0 && (
-                <div className="absolute top-full left-0 right-0 mt-3 rounded-2xl bg-[#0D1B2A] border border-border shadow-glow max-h-[400px] overflow-y-auto z-50 custom-scrollbar p-4 backdrop-blur-lg">
+                <div 
+                  className="absolute top-full left-0 right-0 mt-3 rounded-2xl border border-border shadow-glow max-h-[400px] overflow-y-auto z-50 custom-scrollbar p-4"
+                  style={{ backgroundColor: '#0D1B2A', opacity: 1 }}
+                >
                   <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                     {filteredProducts.map(p => (
                       <button
@@ -582,7 +585,10 @@ const NewBill = () => {
                   />
                 </div>
                 {customerSearch && (
-                  <div className="rounded-xl max-h-48 overflow-y-auto bg-[#0A0F1E] border border-border shadow-glow p-2 space-y-1 custom-scrollbar z-20 relative">
+                  <div 
+                    className="rounded-xl max-h-48 overflow-y-auto border border-border shadow-glow p-2 space-y-1 custom-scrollbar z-20 relative"
+                    style={{ backgroundColor: '#0A0F1E', opacity: 1 }}
+                  >
                     {customers
                       .filter(c => c.name.toLowerCase().includes(customerSearch.toLowerCase()) || c.phone.includes(customerSearch))
                       .map(c => (
