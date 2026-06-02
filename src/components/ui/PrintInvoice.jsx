@@ -52,10 +52,10 @@ export const PrintInvoice = ({ bill, shopSettings, safeFormatDate, amountToWords
             margin: 8mm; 
           }
           body {
+            visibility: hidden !important;
             font-family: 'Times New Roman', Times, serif !important;
           }
-          body * { visibility: hidden; }
-          #bill-print-area, #bill-print-area * { visibility: visible; }
+          #bill-print-area, #bill-print-area * { visibility: visible !important; }
           #bill-print-area { 
             position: absolute !important; 
             left: 0 !important; 

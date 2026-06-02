@@ -232,13 +232,13 @@ const Inventory = () => {
           <input 
             type="text" 
             placeholder="Search assets by name or brand identity..."
-            className="w-full bg-primary/60 border border-border rounded-xl py-4 pl-14 pr-6 text-[0.875rem] font-[400] font-body text-white placeholder:text-white/[0.25] outline-none focus:border-accent focus:shadow-glow transition-all"
+            className="w-full bg-[#080C14] border border-border rounded-xl py-4 pl-14 pr-6 text-[0.875rem] font-[400] font-body text-white placeholder:text-white/[0.25] outline-none focus:border-accent focus:shadow-glow transition-all"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
         <select 
-          className="bg-primary/60 border border-border rounded-xl px-8 py-4 text-[0.68rem] font-[700] font-body text-white uppercase tracking-[0.12em] outline-none focus:border-accent transition-all cursor-pointer"
+          className="bg-[#080C14] border border-border rounded-xl px-8 py-4 text-[0.68rem] font-[700] font-body text-white uppercase tracking-[0.12em] outline-none focus:border-accent transition-all cursor-pointer"
           value={categoryFilter}
           onChange={(e) => setCategoryFilter(e.target.value)}
         >

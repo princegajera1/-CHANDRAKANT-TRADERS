@@ -537,6 +537,22 @@ input[type=number] {
   background-color: rgba(0, 212, 255, 0.08);
 }
 
+input[type="text"], 
+input[type="number"], 
+input[type="date"], 
+input[type="email"], 
+input[type="password"], 
+select, 
+textarea {
+  background-color: #080C14 !important;
+  color: #FFFFFF !important;
+}
+
+select option {
+  background-color: #0D1B2A !important;
+  color: #FFFFFF !important;
+}
+
 .admin-input-focus {
   transition: border-color 0.2s ease, background-color 0.2s ease;
 }
@@ -572,9 +588,24 @@ p { max-width: 60ch; }
   }
 
   body {
+    visibility: hidden !important;
     background: white !important;
     color: black !important;
     font-family: 'Inter', sans-serif !important;
+  }
+
+  #bill-print-area, #bill-print-area * {
+    visibility: visible !important;
+  }
+
+  #bill-print-area {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    max-width: 194mm !important;
+    margin: 0 !important;
+    padding: 0 !important;
   }
   
   .no-print, 
