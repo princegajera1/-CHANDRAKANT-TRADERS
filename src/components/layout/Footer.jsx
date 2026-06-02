@@ -4,7 +4,7 @@ import { Instagram, Facebook, Twitter, MapPin, Phone, Clock, MessageCircle } fro
 
 const Footer = () => {
   return (
-    <footer className="bg-[var(--bg-secondary)] border-t border-[#FF6A001F] pt-20 pb-0 font-body relative overflow-hidden transition-colors duration-500">
+    <footer className="bg-[var(--bg-secondary)] border-t border-[var(--accent)]/10 pt-20 pb-0 font-body relative overflow-hidden transition-colors duration-500">
       
       <div className="max-w-[1280px] mx-auto px-6 sm:px-12">
         <div className="grid grid-cols-1 lg:grid-cols-[2.2fr_1fr_1.2fr] gap-16 pb-20">
@@ -12,10 +12,10 @@ const Footer = () => {
           {/* COLUMN 1 — BRAND BLOCK */}
           <div className="space-y-8">
             <Link to="/" className="flex items-center gap-[14px] group cursor-pointer w-fit">
-              <div className="w-14 h-14 bg-[#FF6A00] rounded-[14px] flex items-center justify-center text-white font-black text-xl italic shadow-xl shadow-[#FF6A0022] group-hover:scale-105 transition-transform duration-300">CT</div>
+              <div className="w-14 h-14 bg-gradient-to-br from-[var(--accent)] to-[#00A3C4] text-[var(--primary)] rounded-[14px] flex items-center justify-center font-black text-xl italic shadow-xl shadow-[rgba(0,212,255,0.15)] group-hover:scale-105 transition-transform duration-300">CT</div>
               <div>
-                <h4 className="text-[1.5rem] font-heading font-extrabold italic leading-none text-white tracking-[0.05em] uppercase group-hover:text-[#FF6A00] transition-colors duration-300">CHANDRAKANT</h4>
-                <p className="text-[#FF6A00] text-[0.65rem] font-heading font-bold tracking-[0.28em] uppercase mt-1">TRADERS</p>
+                <h4 className="text-[1.5rem] font-heading font-extrabold italic leading-none text-white tracking-[0.05em] uppercase group-hover:text-[var(--accent)] transition-colors duration-300">CHANDRAKANT</h4>
+                <p className="text-[var(--accent)] text-[0.65rem] font-heading font-bold tracking-[0.28em] uppercase mt-1">TRADERS</p>
               </div>
             </Link>
             
@@ -71,8 +71,8 @@ const Footer = () => {
           {/* COLUMN 2 — NAVIGATION */}
           <div className="flex flex-col">
             <div className="mb-[1.8rem]">
-              <h4 className="text-[#FF6A00] text-[0.68rem] font-heading font-bold tracking-[0.22em] uppercase italic">NAVIGATION</h4>
-              <div className="h-[2px] w-6 bg-[#FF6A00] mt-2"></div>
+              <h4 className="text-[var(--accent)] text-[0.68rem] font-heading font-bold tracking-[0.22em] uppercase italic">NAVIGATION</h4>
+              <div className="h-[2px] w-6 bg-[var(--accent)] mt-2"></div>
             </div>
             
             <ul className="flex flex-col gap-[1.05rem]">
@@ -87,9 +87,9 @@ const Footer = () => {
                 <li key={i}>
                   <Link 
                     to={link.path}
-                    className="group flex items-center gap-0 hover:gap-2 text-white/55 text-[0.92rem] font-medium hover:text-white transition-all duration-[0.22s] ease-in-out"
+                    className="group flex items-center gap-0 hover:gap-2 text-white/55 text-[0.92rem] font-medium hover:text-white transition-all duration-[0.22s] ease-in-out animate-none"
                   >
-                    <span className="w-0 h-1 bg-[#FF6A00] rounded-full group-hover:w-1 transition-all duration-[0.22s]"></span>
+                    <span className="w-0 h-1 bg-[var(--accent)] rounded-full group-hover:w-1 transition-all duration-[0.22s]"></span>
                     {link.name}
                   </Link>
                 </li>
@@ -101,29 +101,29 @@ const Footer = () => {
           <div className="space-y-10">
             <div>
               <div className="mb-[1.8rem]">
-                <h4 className="text-[#FF6A00] text-[0.68rem] font-heading font-bold tracking-[0.22em] uppercase italic">COORDINATES</h4>
-                <div className="h-[2px] w-6 bg-[#FF6A00] mt-2"></div>
+                <h4 className="text-[var(--accent)] text-[0.68rem] font-heading font-bold tracking-[0.22em] uppercase italic">COORDINATES</h4>
+                <div className="h-[2px] w-6 bg-[var(--accent)] mt-2"></div>
               </div>
               
-              <a href="https://maps.google.com/?q=MG+Road,+Savarkundla,+Gujarat+364515" target="_blank" rel="noreferrer" className="flex items-start gap-3 group cursor-pointer hover:text-[#FF6A00] transition-colors duration-[0.22s]">
-                <MapPin size={20} className="text-[#FF6A00] shrink-0 mt-0.5 group-hover:scale-110 transition-transform" />
+              <a href="https://maps.google.com/?q=MG+Road,+Savarkundla,+Gujarat+364515" target="_blank" rel="noreferrer" className="flex items-start gap-3 group cursor-pointer hover:text-[var(--accent)] transition-colors duration-[0.22s]">
+                <MapPin size={20} className="text-[var(--accent)] shrink-0 mt-0.5 group-hover:scale-110 transition-transform" />
                 <div>
-                  <p className="text-[0.92rem] font-semibold text-white group-hover:text-[#FF6A00] transition-colors duration-[0.22s]">MG Road, Savarkundla</p>
-                  <p className="text-white/50 text-[0.82rem] font-normal group-hover:text-[#FF6A00]/70 transition-colors duration-[0.22s]">Gujarat 364515</p>
+                  <p className="text-[0.92rem] font-semibold text-white group-hover:text-[var(--accent)] transition-colors duration-[0.22s]">MG Road, Savarkundla</p>
+                  <p className="text-white/50 text-[0.82rem] font-normal group-hover:text-[var(--accent)]/70 transition-colors duration-[0.22s]">Gujarat 364515</p>
                 </div>
               </a>
             </div>
 
-            <a href="tel:+919924058659" className="group cursor-pointer flex items-center gap-3 hover:text-[#FF6A00] transition-colors duration-[0.22s]">
-              <Phone size={20} className="text-[#FF6A00] shrink-0 group-hover:scale-110 transition-transform" />
-              <p className="text-[0.95rem] font-bold text-white group-hover:text-[#FF6A00] tracking-[0.03em] transition-all duration-200">
+            <a href="tel:+919924058659" className="group cursor-pointer flex items-center gap-3 hover:text-[var(--accent)] transition-colors duration-[0.22s]">
+              <Phone size={20} className="text-[var(--accent)] shrink-0 group-hover:scale-110 transition-transform" />
+              <p className="text-[0.95rem] font-bold text-white group-hover:text-[var(--accent)] tracking-[0.03em] transition-all duration-200">
                 +91 99240 58659
               </p>
             </a>
 
-            <div className="flex items-center gap-3 group cursor-pointer hover:text-[#FF6A00] transition-colors duration-[0.22s]">
-              <Clock size={18} className="text-[#FF6A00] shrink-0 group-hover:scale-110 transition-transform" />
-              <p className="text-[0.8rem] font-normal text-white/35 group-hover:text-[#FF6A00]/70 transition-colors duration-[0.22s]">
+            <div className="flex items-center gap-3 group cursor-pointer hover:text-[var(--accent)] transition-colors duration-[0.22s]">
+              <Clock size={18} className="text-[var(--accent)] shrink-0 group-hover:scale-110 transition-transform" />
+              <p className="text-[0.8rem] font-normal text-white/35 group-hover:text-[var(--accent)]/70 transition-colors duration-[0.22s]">
                 Mon – Sat, 9:00 AM to 8:00 PM
               </p>
             </div>
@@ -154,7 +154,7 @@ const Footer = () => {
           display: inline-block;
           width: 0;
           height: 4px;
-          background-color: #FF6A00;
+          background-color: var(--accent);
           border-radius: 50%;
           margin-right: 0;
           transition: all 0.22s ease;

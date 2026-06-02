@@ -18,19 +18,19 @@ const Customers = () => {
   const [editingCustomer, setEditingCustomer] = useState(null);
   const [isDeleting, setIsDeleting] = useState(null);
   const [formData, setFormData] = useState({ 
-    name: '', phone: '', email: '', address: '', vehicleNo: '', gstin: '', pan: '', creditLimit: 0, balance: 0, transporter: '', bankName: '', accountNumber: '', ifscCode: ''
+    name: '', phone: '', email: '', address: '', vehicleNo: '', gstin: '', pan: '', creditLimit: 0, balance: 0, transporter: '', bankName: '', accountNumber: '', ifscCode: '', notes: ''
   });
   const [formErrors, setFormErrors] = useState({});
   const navigate = useNavigate();
 
   const filteredCustomers = customers.filter(c => 
     (c.name || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
-    (c.phone || '').includes(searchTerm) ||
+    (c.phone || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
     (c.gstin || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const resetForm = () => {
-    setFormData({ name: '', phone: '', email: '', address: '', vehicleNo: '', gstin: '', pan: '', creditLimit: 0, balance: 0, transporter: '', bankName: '', accountNumber: '', ifscCode: '' });
+    setFormData({ name: '', phone: '', email: '', address: '', vehicleNo: '', gstin: '', pan: '', creditLimit: 0, balance: 0, transporter: '', bankName: '', accountNumber: '', ifscCode: '', notes: '' });
     setFormErrors({});
     setEditingCustomer(null);
   };
@@ -49,7 +49,8 @@ const Customers = () => {
       accountNumber: customer.accountNumber || '',
       ifscCode: customer.ifscCode || '',
       creditLimit: customer.creditLimit || 0,
-      balance: customer.balance || 0
+      balance: customer.balance || 0,
+      notes: customer.notes || ''
     });
     setFormErrors({});
     setEditingCustomer(customer);
@@ -171,6 +172,7 @@ const Customers = () => {
                 <th className="p-6 font-body font-[600] text-[0.65rem] text-white/[0.36] uppercase tracking-[0.14em]">Vehicle Number</th>
                 <th className="p-6 font-body font-[600] text-[0.65rem] text-white/[0.36] uppercase tracking-[0.14em]">GSTIN</th>
                 <th className="p-6 font-body font-[600] text-[0.65rem] text-white/[0.36] uppercase tracking-[0.14em] text-center">Total Bills</th>
+                <th className="p-6 font-body font-[600] text-[0.65rem] text-white/[0.36] uppercase tracking-[0.14em] text-right">Lifetime Billed</th>
                 <th className="p-6 font-body font-[600] text-[0.65rem] text-white/[0.36] uppercase tracking-[0.14em] text-right">Outstanding Balance</th>
                 <th className="p-6 font-body font-[600] text-[0.65rem] text-white/[0.36] uppercase tracking-[0.14em] text-center">Last Bill Date</th>
                 <th className="p-6 font-body font-[600] text-[0.65rem] text-white/[0.36] uppercase tracking-[0.14em] text-right">Actions</th>
@@ -204,6 +206,9 @@ const Customers = () => {
                   </td>
                   <td className="p-6 text-center">
                     <span className="font-body font-[600] text-[0.8rem] text-white/[0.6]">{customer.totalBillsCount || 0}</span>
+                  </td>
+                  <td className="p-6 text-right font-mono font-[700] text-[0.9rem] text-[#00D4FF]">
+                    ₹{(customer.totalPurchased || 0).toLocaleString('en-IN')}
                   </td>
                   <td className="p-6 text-right">
                     <div className={`font-heading font-[700] text-[0.95rem] ${customer.balance > 0 ? 'text-[#FF6A00]' : 'text-[#10B981]'}`}>
@@ -362,6 +367,15 @@ const Customers = () => {
                 value={formData.ifscCode} onChange={e => setFormData({...formData, ifscCode: e.target.value.toUpperCase()})}
               />
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="font-body font-[600] text-[0.65rem] text-white/[0.46] uppercase tracking-[0.12em] ml-1">Special Notes / Remarks (Optional)</label>
+            <textarea 
+              className="w-full h-[80px] p-5 rounded-xl text-[0.875rem] font-body font-[400] bg-[#080C14] border border-white/10 text-white outline-none focus:border-[#FF6A00] transition-all admin-input-focus resize-none"
+              value={formData.notes || ''} onChange={e => setFormData({...formData, notes: e.target.value})}
+              placeholder="e.g. Special pricing, preferred delivery agent, credit guidelines..."
+            />
           </div>
 
           <div className="pt-6 flex gap-4">

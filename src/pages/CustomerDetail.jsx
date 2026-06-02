@@ -106,6 +106,11 @@ const CustomerDetail = () => {
                 <p className={`text-[2rem] font-heading font-[800] tracking-tighter ${customer.balance > 0 ? 'text-red-500' : 'text-emerald-500'}`}>{formatCurrency(customer.balance)}</p>
               </div>
 
+              <div className="mt-4 p-8 rounded-3xl bg-[#080C14] border border-white/5 text-center">
+                <p className="font-body font-[600] text-[0.62rem] text-white/40 uppercase tracking-[0.16em] mb-2">Lifetime Total Purchase</p>
+                <p className="text-[2rem] font-heading font-[800] tracking-tighter text-[#00D4FF]">{formatCurrency(customer.totalPurchased || 0)}</p>
+              </div>
+
               <div className="grid grid-cols-1 gap-4 mt-8">
                 <button 
                   onClick={() => setIsPaymentModalOpen(true)}
@@ -137,6 +142,13 @@ const CustomerDetail = () => {
                   </div>
                 </div>
               </div>
+
+              {customer.notes && (
+                <div className="mt-8 pt-8 border-t border-white/5 text-left">
+                  <p className="font-body font-[600] text-[0.62rem] text-[#FF6A00] uppercase tracking-[0.16em] mb-2">Special Notes / Remarks</p>
+                  <p className="font-body font-[400] text-[0.78rem] text-white/60 leading-relaxed italic">"{customer.notes}"</p>
+                </div>
+              )}
             </div>
             <div className="absolute -right-10 -bottom-10 opacity-[0.02] group-hover:opacity-[0.05] transition-opacity pointer-events-none">
               <FileText size={200} />

@@ -1,27 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useProducts } from '../hooks/useProducts';
 import { useAuthContext } from '../context/AuthContext';
 import { Search, Plus, Eye, Edit2, Trash2, Package, X, AlertTriangle, Lock } from 'lucide-react';
 import { Modal } from '../components/ui/Modal';
+import { AnimatedNumber } from '../components/ui/AnimatedNumber';
 import { addProduct, updateProduct } from '../firebase/products';
 import { moveToTrash } from '../firebase/trash';
 import { toast } from 'react-hot-toast';
-
-const CountUp = ({ end, duration = 1.2, isCurrency = false }) => {
-  const [count, setCount] = useState(0);
-  useEffect(() => {
-    let startTimestamp = null;
-    const step = (timestamp) => {
-      if (!startTimestamp) startTimestamp = timestamp;
-      const progress = Math.min((timestamp - startTimestamp) / (duration * 1000), 1);
-      setCount(Math.floor(progress * end));
-      if (progress < 1) window.requestAnimationFrame(step);
-    };
-    window.requestAnimationFrame(step);
-  }, [end, duration]);
-  return isCurrency ? `₹${count.toLocaleString()}` : count;
-};
+import gsap from 'gsap';
 
 const Inventory = () => {
   const location = useLocation();
@@ -31,7 +18,6 @@ const Inventory = () => {
   
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('All');
-  const [isChanging, setIsChanging] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSpecsOpen, setIsSpecsOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
@@ -43,6 +29,8 @@ const Inventory = () => {
     currentQty: 0, minQty: 5, purchasePrice: 0, sellingPrice: 0,
     hsnCode: '4011', gstPercent: 5
   });
+
+  const pageRef = useRef(null);
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -62,6 +50,40 @@ const Inventory = () => {
     }
   }, [location.search, products, navigate, isModalOpen]);
 
+  // GSAP Entrance Animations
+  useEffect(() => {
+    if (loading) return;
+    const ctx = gsap.context(() => {
+      const tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
+
+      tl.fromTo('.page-header-block', 
+        { opacity: 0, y: 30 },
+        { opacity: 1, y: 0, duration: 0.6 }
+      );
+
+      tl.fromTo('.stat-card-item', 
+        { opacity: 0, y: 30 },
+        { opacity: 1, y: 0, stagger: 0.08, duration: 0.6 },
+        '-=0.4'
+      );
+
+      tl.fromTo('.controls-block',
+        { opacity: 0, y: 20 },
+        { opacity: 1, y: 0, duration: 0.5 },
+        '-=0.3'
+      );
+
+      tl.fromTo('.table-block',
+        { opacity: 0, y: 20 },
+        { opacity: 1, y: 0, duration: 0.6 },
+        '-=0.3'
+      );
+    }, pageRef);
+
+    return () => ctx.revert();
+  }, [loading]);
+
+  // GSAP Row Stagger on filter/search change
   const filteredProducts = products.filter(p => {
     const matchesSearch = (p.name || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
                           (p.brand || '').toLowerCase().includes(searchTerm.toLowerCase());
@@ -72,6 +94,17 @@ const Inventory = () => {
     const matchesCategory = categoryFilter === 'All' || p.category === categoryFilter;
     return matchesSearch && matchesCategory;
   });
+
+  useEffect(() => {
+    if (loading) return;
+    const ctx = gsap.context(() => {
+      gsap.fromTo('.row-item-stagger', 
+        { opacity: 0, y: 15 }, 
+        { opacity: 1, y: 0, stagger: 0.02, duration: 0.4, ease: 'power2.out', overwrite: 'auto' }
+      );
+    }, pageRef);
+    return () => ctx.revert();
+  }, [loading, filteredProducts.length, searchTerm, categoryFilter]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -141,26 +174,26 @@ const Inventory = () => {
   };
 
   const stats = [
-    { label: 'Total Assets', val: products.length, icon: Package, color: '#FF6A00' },
-    { label: 'Inventory Valuation', val: products.reduce((acc, p) => acc + (p.sellingPrice * p.currentQty), 0), icon: Package, color: '#10B981', isCurrency: true },
-    { label: 'Critical Alerts', val: products.filter(p => p.currentQty <= p.minQty).length, icon: Package, color: '#ef4444' }
+    { label: 'Total Assets', val: products.length, icon: Package, color: '#00D4FF', glow: 'shadow-glow' },
+    { label: 'Inventory Valuation', val: products.reduce((acc, p) => acc + (p.sellingPrice * p.currentQty), 0), icon: Package, color: '#00E676', isCurrency: true, glow: 'shadow-glow-green' },
+    { label: 'Critical Alerts', val: products.filter(p => p.currentQty <= p.minQty).length, icon: Package, color: '#FF3D57', glow: 'shadow-glow-red' }
   ];
 
   if (loading) return <div className="p-8 text-white/50 font-black uppercase tracking-widest text-[0.7rem] animate-pulse">Syncing Inventory Protocols...</div>;
 
   return (
-    <div className="space-y-10 pb-16">
+    <div ref={pageRef} className="space-y-10 pb-16">
       
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 animate-page-entrance">
+      <div className="page-header-block flex flex-col md:flex-row md:items-center justify-between gap-6 opacity-0">
         <div>
-          <h2 className="font-heading font-[800] text-[1.6rem] text-white uppercase">Inventory Management</h2>
-          <p className="font-body italic font-[400] text-[0.75rem] text-white/40 mt-1 sentence-case first-letter:uppercase">Stock management and asset tracking</p>
+          <h2 className="font-heading font-[800] text-[1.6rem] text-white uppercase tracking-wider">Inventory Management</h2>
+          <p className="font-body italic font-[400] text-[0.75rem] text-[#8899A6] mt-1 sentence-case first-letter:uppercase">Stock management and asset tracking</p>
         </div>
         <button 
           onClick={() => { setEditingProduct(null); resetForm(); setIsModalOpen(true); }}
           disabled={isReadOnly}
-          className="h-[52px] px-8 rounded-2xl bg-[#FF6A00] text-white font-body font-[700] text-[0.8rem] uppercase tracking-[0.14em] shadow-lg shadow-[#FF6A0033] hover:translate-y-[-2px] transition-all flex items-center gap-3 admin-btn-hover disabled:opacity-50 disabled:cursor-not-allowed"
+          className="h-[52px] px-8 rounded-2xl bg-accent text-primary font-body font-[700] text-[0.8rem] uppercase tracking-[0.14em] shadow-glow hover:shadow-[0_0_30px_rgba(0,212,255,0.4)] hover:-translate-y-0.5 transition-all flex items-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
           title={isReadOnly ? "Read-Only Mode - Upgrade to add assets" : ""}
         >
           <Plus size={20} /> <span className="hidden sm:inline">Add Product</span>
@@ -173,8 +206,7 @@ const Inventory = () => {
           <div 
             key={i} 
             onClick={() => setStatModal(stat.label)}
-            className="p-8 rounded-[24px] bg-[#0D1220] border border-white/[0.05] flex items-center gap-6 animate-[cardEntrance_0.5s_cubic-bezier(0.16,1,0.3,1)_forwards] admin-card-hover opacity-0 translate-y-5" 
-            style={{ animationDelay: `${i * 0.1}s` }}
+            className={`stat-card-item p-8 rounded-[24px] bg-secondary/80 border border-border flex items-center gap-6 cursor-pointer hover:border-white/20 transition-all duration-300 backdrop-blur-md opacity-0 ${stat.glow}`}
           >
             <div 
               className="w-14 h-14 rounded-2xl flex items-center justify-center relative" 
@@ -186,7 +218,7 @@ const Inventory = () => {
             <div>
               <p className="text-[0.65rem] font-black text-white/40 uppercase tracking-[0.2em]">{stat.label}</p>
               <h4 className="text-[1.4rem] font-heading font-bold text-white mt-1 uppercase tracking-tighter">
-                <CountUp end={stat.val} isCurrency={stat.isCurrency} />
+                <AnimatedNumber value={stat.val} prefix={stat.isCurrency ? "₹" : ""} />
               </h4>
             </div>
           </div>
@@ -194,77 +226,89 @@ const Inventory = () => {
       </div>
 
       {/* Controls */}
-      <div className="p-8 rounded-[24px] bg-[#0D1220] border border-white/[0.05] flex flex-col md:flex-row gap-6 animate-page-entrance" style={{ animationDelay: '0.25s' }}>
+      <div className="controls-block p-8 rounded-[24px] bg-secondary/80 border border-border flex flex-col md:flex-row gap-6 backdrop-blur-md opacity-0">
         <div className="flex-1 relative group">
-          <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-[#FF6A00] transition-colors" size={20} />
+          <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-[#8899A6] group-focus-within:text-accent transition-colors" size={20} />
           <input 
             type="text" 
             placeholder="Search assets by name or brand identity..."
-            className="w-full bg-[#080C14] border border-white/10 rounded-xl py-4 pl-14 pr-6 text-[0.875rem] font-[400] font-body text-white placeholder:text-white/[0.25] outline-none focus:border-[#FF6A00] transition-all"
+            className="w-full bg-primary/60 border border-border rounded-xl py-4 pl-14 pr-6 text-[0.875rem] font-[400] font-body text-white placeholder:text-white/[0.25] outline-none focus:border-accent focus:shadow-glow transition-all"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
         <select 
-          className="bg-[#080C14] border border-white/10 rounded-xl px-8 py-4 text-[0.68rem] font-[700] font-body text-white uppercase tracking-[0.12em] outline-none focus:border-[#FF6A00] transition-all cursor-pointer"
+          className="bg-primary/60 border border-border rounded-xl px-8 py-4 text-[0.68rem] font-[700] font-body text-white uppercase tracking-[0.12em] outline-none focus:border-accent transition-all cursor-pointer"
           value={categoryFilter}
           onChange={(e) => setCategoryFilter(e.target.value)}
         >
-          <option value="All" className="bg-[#0D1220] text-white">ALL PROTOCOLS</option>
-          <option value="Low Stock" className="bg-[#0D1220] text-white">CRITICAL ALERTS</option>
-          <option value="Tyre" className="bg-[#0D1220] text-white">TYRE ASSETS</option>
-          <option value="Tube" className="bg-[#0D1220] text-white">TUBE ASSETS</option>
-          <option value="Flap" className="bg-[#0D1220] text-white">FLAP ASSETS</option>
+          <option value="All" className="bg-secondary text-white">ALL PROTOCOLS</option>
+          <option value="Low Stock" className="bg-secondary text-white">CRITICAL ALERTS</option>
+          <option value="Tyre" className="bg-secondary text-white">TYRE ASSETS</option>
+          <option value="Tube" className="bg-secondary text-white">TUBE ASSETS</option>
+          <option value="Flap" className="bg-secondary text-white">FLAP ASSETS</option>
         </select>
       </div>
 
       {/* Table */}
-      <div className="rounded-[32px] bg-[#0D1220] border border-white/[0.05] overflow-hidden animate-page-entrance" style={{ animationDelay: '0.35s' }}>
+      <div className="table-block rounded-[32px] bg-secondary/80 border border-border overflow-hidden backdrop-blur-md opacity-0">
         <div className="overflow-x-auto">
           <table className="w-full text-left">
             <thead>
-              <tr className="border-b border-white/[0.05] bg-white/[0.01]">
-                <th className="p-8 font-body font-[600] text-[0.65rem] text-white/[0.36] uppercase tracking-[0.14em]">Product Identity</th>
-                <th className="p-8 font-body font-[600] text-[0.65rem] text-white/[0.36] uppercase tracking-[0.14em]">Inventory Status</th>
-                <th className="p-8 font-body font-[600] text-[0.65rem] text-white/[0.36] uppercase tracking-[0.14em] text-right">Valuation</th>
-                <th className="p-8 font-body font-[600] text-[0.65rem] text-white/[0.36] uppercase tracking-[0.14em] text-center">Action</th>
+              <tr className="border-b border-border bg-white/[0.01]">
+                <th className="p-8 font-body font-[600] text-[0.65rem] text-[#8899A6] uppercase tracking-[0.14em]">Product Identity</th>
+                <th className="p-8 font-body font-[600] text-[0.65rem] text-[#8899A6] uppercase tracking-[0.14em]">Inventory Status</th>
+                <th className="p-8 font-body font-[600] text-[0.65rem] text-[#8899A6] uppercase tracking-[0.14em] text-right">Valuation</th>
+                <th className="p-8 font-body font-[600] text-[0.65rem] text-[#8899A6] uppercase tracking-[0.14em] text-center">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/[0.03]">
-              {filteredProducts.map((p, i) => (
-                <tr key={p.id} className="group hover:bg-white/[0.02] transition-all animate-row-entrance" style={{ animationDelay: `${i * 0.025}s` }}>
+              {filteredProducts.map((p) => (
+                <tr key={p.id} className="row-item-stagger group hover:bg-[#00D4FF]/[0.02] transition-all opacity-0">
                   <td className="p-8">
-                    <p className="font-body font-[600] text-[0.875rem] text-white group-hover:text-[#FF6A00] transition-colors">{p.name}</p>
-                    <p className="mt-1">
-                      <span className="font-body font-[700] text-[0.62rem] uppercase tracking-[0.08em]">{p.brand}</span>
-                      <span className="text-white/20 mx-2">·</span>
-                      <span className="font-body font-[400] text-[0.68rem] text-white/[0.38] uppercase tracking-[0.1em]">{p.category}</span>
-                      {p.size && <span className="font-body font-[400] text-[0.75rem] text-white/[0.48] ml-2 border-l border-white/10 pl-2">{p.size}</span>}
+                    <p className="font-body font-[600] text-[0.875rem] text-white group-hover:text-accent transition-colors">{p.name}</p>
+                    <p className="mt-1 flex items-center gap-2">
+                      <span className="font-body font-[700] text-[0.62rem] text-accent uppercase tracking-[0.08em]">{p.brand}</span>
+                      <span className="text-white/20">·</span>
+                      <span className="font-body font-[400] text-[0.68rem] text-[#8899A6] uppercase tracking-[0.1em]">{p.category}</span>
+                      {p.size && (
+                        <>
+                          <span className="text-white/20">·</span>
+                          <span className="font-body font-[400] text-[0.75rem] text-white/50">{p.size}</span>
+                        </>
+                      )}
                     </p>
                   </td>
                   <td className="p-8">
                     <div className="flex items-center gap-3">
-                      <div className={`w-2.5 h-2.5 rounded-full ${p.currentQty <= p.minQty ? 'bg-red-500 shadow-[0_0_12px_#ef4444]' : 'bg-[#10B981]'}`}></div>
-                      <span className={`font-body font-[700] text-[0.875rem] ${p.currentQty <= p.minQty ? 'text-red-500' : 'text-white'}`}>{p.currentQty}</span>
-                      <span className="font-body font-[500] text-[0.62rem] text-white/[0.38] tracking-[0.1em] uppercase ml-[-4px]">UNITS</span>
+                      <div className={`w-2.5 h-2.5 rounded-full ${p.currentQty <= p.minQty ? 'bg-[#FF3D57] shadow-glow-red' : 'bg-[#00E676] shadow-glow-green'}`}></div>
+                      <span className={`font-body font-[700] text-[0.875rem] ${p.currentQty <= p.minQty ? 'text-[#FF3D57]' : 'text-white'}`}>{p.currentQty}</span>
+                      <span className="font-body font-[500] text-[0.62rem] text-[#8899A6] tracking-[0.1em] uppercase">UNITS</span>
                       {p.currentQty <= p.minQty && (
-                        <span className="ml-2 font-body font-[700] text-[0.65rem] text-red-500 tracking-[0.06em] uppercase border border-red-500/20 bg-red-500/10 px-2 py-0.5 rounded-[4px]">LOW STOCK ALERT</span>
+                        <span className="ml-2 font-body font-[700] text-[0.65rem] text-[#FF3D57] tracking-[0.06em] uppercase border border-[#FF3D57]/20 bg-[#FF3D57]/10 px-2 py-0.5 rounded-[4px]">LOW STOCK</span>
                       )}
                     </div>
                   </td>
                   <td className="p-8 text-right">
-                    <p className="font-heading font-[700] text-[1rem] text-[#FF6A00]">₹{p.sellingPrice.toLocaleString()}</p>
-                    <p className="font-body font-[400] text-[0.62rem] text-white/[0.32] uppercase tracking-[0.08em] mt-1">MRP INCL GST</p>
+                    <p className="font-heading font-[700] text-[1rem] text-[#00E676]">₹{p.sellingPrice.toLocaleString()}</p>
+                    <p className="font-body font-[400] text-[0.62rem] text-[#8899A6] uppercase tracking-[0.08em] mt-1">MRP INCL GST</p>
                   </td>
                   <td className="p-8">
                     <div className="flex items-center justify-center gap-3">
-                      <button onClick={() => handleView(p)} className="p-3 rounded-xl bg-white/5 text-white/30 hover:text-white hover:bg-[#FF6A00] transition-all admin-btn-hover"><Eye size={18} /></button>
-                      <button onClick={() => handleEdit(p)} className="p-3 rounded-xl bg-white/5 text-white/30 hover:text-white hover:bg-blue-500 transition-all admin-btn-hover"><Edit2 size={18} /></button>
-                      <button onClick={() => setIsDeleting(p.id)} className="p-3 rounded-xl bg-white/5 text-white/30 hover:text-white hover:bg-red-500 transition-all admin-btn-hover"><Trash2 size={18} /></button>
+                      <button onClick={() => handleView(p)} className="p-3 rounded-xl bg-white/5 text-white/30 hover:text-primary hover:bg-accent transition-all duration-200" title="View details"><Eye size={18} /></button>
+                      <button onClick={() => handleEdit(p)} className="p-3 rounded-xl bg-white/5 text-white/30 hover:text-primary hover:bg-[#00E676] transition-all duration-200" title="Edit item"><Edit2 size={18} /></button>
+                      <button onClick={() => setIsDeleting(p.id)} className="p-3 rounded-xl bg-white/5 text-white/30 hover:text-white hover:bg-[#FF3D57] transition-all duration-200" title="Delete item"><Trash2 size={18} /></button>
                     </div>
                   </td>
                 </tr>
               ))}
+              {filteredProducts.length === 0 && (
+                <tr>
+                  <td colSpan={4} className="p-16 text-center text-[#8899A6] font-body text-[0.95rem] italic">
+                    No matching assets found in the inventory registry.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
@@ -281,34 +325,34 @@ const Inventory = () => {
             <div className="text-center pb-4 border-b border-white/5">
               <h4 className="text-[1.8rem] font-heading font-black text-white uppercase tracking-tighter leading-none mb-4">{selectedProduct.name}</h4>
               <div className="flex items-center justify-center gap-3">
-                <span className="px-3 py-1 rounded-lg font-body font-[700] text-[0.6rem] uppercase tracking-[0.14em] bg-[#FF6A00]/10 text-[#FF6A00] border border-[#FF6A00]/20">{selectedProduct.brand}</span>
+                <span className="px-3 py-1 rounded-lg font-body font-[700] text-[0.6rem] uppercase tracking-[0.14em] bg-accent/10 text-accent border border-accent/20">{selectedProduct.brand}</span>
                 <span className="px-3 py-1 rounded-lg font-body font-[700] text-[0.6rem] uppercase tracking-[0.14em] bg-blue-500/10 text-blue-400 border border-blue-500/20">{selectedProduct.category}</span>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5">
-                <p className="text-[0.65rem] font-black text-white/40 uppercase tracking-widest mb-1">Size</p>
+                <p className="text-[0.65rem] font-black text-[#8899A6] uppercase tracking-widest mb-1">Size</p>
                 <p className="text-[0.95rem] font-[600] text-white">{selectedProduct.size || 'N/A'}</p>
               </div>
               <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5">
-                <p className="text-[0.65rem] font-black text-white/40 uppercase tracking-widest mb-1">GST Percent</p>
+                <p className="text-[0.65rem] font-black text-[#8899A6] uppercase tracking-widest mb-1">GST Percent</p>
                 <p className="text-[0.95rem] font-[600] text-white">{selectedProduct.gstPercent}%</p>
               </div>
               <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5">
-                <p className="text-[0.65rem] font-black text-white/40 uppercase tracking-widest mb-1">Stock Quantity</p>
-                <p className={`text-[0.95rem] font-[600] ${selectedProduct.currentQty <= selectedProduct.minQty ? 'text-red-500' : 'text-white'}`}>{selectedProduct.currentQty} Units</p>
+                <p className="text-[0.65rem] font-black text-[#8899A6] uppercase tracking-widest mb-1">Stock Quantity</p>
+                <p className={`text-[0.95rem] font-[600] ${selectedProduct.currentQty <= selectedProduct.minQty ? 'text-[#FF3D57]' : 'text-white'}`}>{selectedProduct.currentQty} Units</p>
               </div>
               <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5">
-                <p className="text-[0.65rem] font-black text-white/40 uppercase tracking-widest mb-1">Min Stock Limit</p>
+                <p className="text-[0.65rem] font-black text-[#8899A6] uppercase tracking-widest mb-1">Min Stock Limit</p>
                 <p className="text-[0.95rem] font-[600] text-white">{selectedProduct.minQty} Units</p>
               </div>
               <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5">
-                <p className="text-[0.65rem] font-black text-white/40 uppercase tracking-widest mb-1">Purchase Price</p>
-                <p className="text-[0.95rem] font-[600] text-white">₹{selectedProduct.purchasePrice.toLocaleString()}</p>
+                <p className="text-[0.65rem] font-black text-[#8899A6] uppercase tracking-widest mb-1">Purchase Price</p>
+                <p className="text-[0.95rem] font-[600] text-[#00E676]">₹{selectedProduct.purchasePrice.toLocaleString()}</p>
               </div>
               <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5">
-                <p className="text-[0.65rem] font-black text-white/40 uppercase tracking-widest mb-1">Selling Price</p>
-                <p className="text-[0.95rem] font-[600] text-white">₹{selectedProduct.sellingPrice.toLocaleString()}</p>
+                <p className="text-[0.65rem] font-black text-[#8899A6] uppercase tracking-widest mb-1">Selling Price</p>
+                <p className="text-[0.95rem] font-[600] text-accent">₹{selectedProduct.sellingPrice.toLocaleString()}</p>
               </div>
             </div>
           </div>
@@ -321,7 +365,7 @@ const Inventory = () => {
           <p className="text-white/60 text-[0.9rem] font-medium leading-relaxed">This item will be moved to the recycle bin. You can restore it later.</p>
           <div className="flex gap-4 pt-2">
             <button onClick={() => setIsDeleting(null)} className="flex-1 py-4 rounded-xl bg-transparent border border-white/20 text-[0.75rem] font-black uppercase tracking-widest text-white hover:bg-white/5 transition-all">Cancel</button>
-            <button onClick={handleDeleteConfirm} className="flex-1 py-4 rounded-xl bg-red-500 text-[0.75rem] font-black uppercase tracking-widest text-white shadow-lg hover:bg-red-600 transition-all">Confirm</button>
+            <button onClick={handleDeleteConfirm} className="flex-1 py-4 rounded-xl bg-[#FF3D57] text-[0.75rem] font-black uppercase tracking-widest text-white shadow-glow-red hover:bg-[#FF3D57]/80 transition-all">Confirm</button>
           </div>
         </div>
       </Modal>
@@ -330,84 +374,84 @@ const Inventory = () => {
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingProduct ? "Edit Product" : "Add New Product"} maxWidth="720px">
         <form onSubmit={handleSubmit} className="space-y-6 pb-4">
           <div className="space-y-2">
-            <label className="text-[0.65rem] font-black uppercase tracking-widest text-white/60 ml-1">Product Name *</label>
-            <input type="text" required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full h-[48px] px-5 rounded-xl bg-[#080C14] border border-white/10 text-white text-[0.85rem] font-bold outline-none focus:border-[#FF6A00] transition-all admin-input-focus" />
+            <label className="text-[0.65rem] font-black uppercase tracking-widest text-[#8899A6] ml-1">Product Name *</label>
+            <input type="text" required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full h-[48px] px-5 rounded-xl bg-primary border border-border text-white text-[0.85rem] font-bold outline-none focus:border-accent focus:shadow-glow transition-all" />
           </div>
           
           <div className="grid grid-cols-2 gap-6">
             <div className="space-y-2">
-              <label className="text-[0.65rem] font-black uppercase tracking-widest text-white/30 ml-1">Manufacturer *</label>
-              <select value={formData.brand} onChange={e => setFormData({...formData, brand: e.target.value})} className="w-full h-[48px] px-5 rounded-xl bg-[#080C14] border border-white/10 text-white text-[0.85rem] font-bold outline-none focus:border-[#FF6A00] transition-all admin-input-focus">
-                <option value="MRF" className="bg-[#0D1220] text-white">MRF</option>
-                <option value="CEAT" className="bg-[#0D1220] text-white">CEAT</option>
-                <option value="Apollo" className="bg-[#0D1220] text-white">Apollo</option>
-                <option value="JK Tyre" className="bg-[#0D1220] text-white">JK Tyre</option>
-                <option value="Michelin" className="bg-[#0D1220] text-white">Michelin</option>
-                <option value="TVS" className="bg-[#0D1220] text-white">TVS</option>
+              <label className="text-[0.65rem] font-black uppercase tracking-widest text-[#8899A6] ml-1">Manufacturer *</label>
+              <select value={formData.brand} onChange={e => setFormData({...formData, brand: e.target.value})} className="w-full h-[48px] px-5 rounded-xl bg-primary border border-border text-white text-[0.85rem] font-bold outline-none focus:border-accent transition-all cursor-pointer">
+                <option value="MRF" className="bg-secondary text-white">MRF</option>
+                <option value="CEAT" className="bg-secondary text-white">CEAT</option>
+                <option value="Apollo" className="bg-secondary text-white">Apollo</option>
+                <option value="JK Tyre" className="bg-secondary text-white">JK Tyre</option>
+                <option value="Michelin" className="bg-secondary text-white">Michelin</option>
+                <option value="TVS" className="bg-secondary text-white">TVS</option>
                 {products.map(p => p.brand).filter((v, i, a) => a.indexOf(v) === i && !['MRF','CEAT','Apollo','JK Tyre','Michelin','TVS','Other'].includes(v)).map(brand => (
-                  <option key={brand} value={brand} className="bg-[#0D1220] text-white">{brand}</option>
+                  <option key={brand} value={brand} className="bg-secondary text-white">{brand}</option>
                 ))}
-                <option value="Other" className="bg-[#0D1220] text-white">✚ Add Custom...</option>
+                <option value="Other" className="bg-secondary text-accent">✚ Add Custom...</option>
               </select>
               {formData.brand === 'Other' && (
-                <input type="text" placeholder="Enter custom manufacturer..." autoFocus required value={formData.customBrand || ''} onChange={e => setFormData({...formData, customBrand: e.target.value})} className="w-full h-[48px] px-5 mt-2 rounded-xl bg-[#0D1220] border border-[#FF6A00]/50 text-white text-[0.85rem] font-bold outline-none focus:border-[#FF6A00] transition-all animate-dropdown-entrance" />
+                <input type="text" placeholder="Enter custom manufacturer..." autoFocus required value={formData.customBrand || ''} onChange={e => setFormData({...formData, customBrand: e.target.value})} className="w-full h-[48px] px-5 mt-2 rounded-xl bg-primary border border-accent text-white text-[0.85rem] font-bold outline-none focus:border-accent focus:shadow-glow transition-all" />
               )}
             </div>
             <div className="space-y-2">
-              <label className="text-[0.65rem] font-black uppercase tracking-widest text-white/30 ml-1">Classification *</label>
-              <select value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} className="w-full h-[48px] px-5 rounded-xl bg-[#080C14] border border-white/10 text-white text-[0.85rem] font-bold outline-none focus:border-[#FF6A00] transition-all admin-input-focus">
-                <option value="Tyre" className="bg-[#0D1220] text-white">Tyre</option>
-                <option value="Tube" className="bg-[#0D1220] text-white">Tube</option>
-                <option value="Flap" className="bg-[#0D1220] text-white">Flap</option>
-                <option value="Battery" className="bg-[#0D1220] text-white">Battery</option>
-                <option value="Accessory" className="bg-[#0D1220] text-white">Accessory</option>
+              <label className="text-[0.65rem] font-black uppercase tracking-widest text-[#8899A6] ml-1">Classification *</label>
+              <select value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} className="w-full h-[48px] px-5 rounded-xl bg-primary border border-border text-white text-[0.85rem] font-bold outline-none focus:border-accent transition-all cursor-pointer">
+                <option value="Tyre" className="bg-secondary text-white">Tyre</option>
+                <option value="Tube" className="bg-secondary text-white">Tube</option>
+                <option value="Flap" className="bg-secondary text-white">Flap</option>
+                <option value="Battery" className="bg-secondary text-white">Battery</option>
+                <option value="Accessory" className="bg-secondary text-white">Accessory</option>
                 {products.map(p => p.category).filter((v, i, a) => a.indexOf(v) === i && !['Tyre','Tube','Flap','Battery','Accessory','Other'].includes(v)).map(cat => (
-                  <option key={cat} value={cat} className="bg-[#0D1220] text-white">{cat}</option>
+                  <option key={cat} value={cat} className="bg-secondary text-white">{cat}</option>
                 ))}
-                <option value="Other" className="bg-[#0D1220] text-white">✚ Add Custom...</option>
+                <option value="Other" className="bg-secondary text-accent">✚ Add Custom...</option>
               </select>
               {formData.category === 'Other' && (
-                <input type="text" placeholder="Enter custom classification..." autoFocus required value={formData.customCategory || ''} onChange={e => setFormData({...formData, customCategory: e.target.value})} className="w-full h-[48px] px-5 mt-2 rounded-xl bg-[#0D1220] border border-[#FF6A00]/50 text-white text-[0.85rem] font-bold outline-none focus:border-[#FF6A00] transition-all animate-dropdown-entrance" />
+                <input type="text" placeholder="Enter custom classification..." autoFocus required value={formData.customCategory || ''} onChange={e => setFormData({...formData, customCategory: e.target.value})} className="w-full h-[48px] px-5 mt-2 rounded-xl bg-primary border border-accent text-white text-[0.85rem] font-bold outline-none focus:border-accent focus:shadow-glow transition-all" />
               )}
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-6">
             <div className="space-y-2">
-              <label className="text-[0.65rem] font-black uppercase tracking-widest text-white/30 ml-1">Specification (Size)</label>
-              <input type="text" value={formData.size} onChange={e => setFormData({...formData, size: e.target.value})} className="w-full h-[48px] px-5 rounded-xl bg-[#080C14] border border-white/10 text-white text-[0.85rem] font-bold outline-none focus:border-[#FF6A00] transition-all admin-input-focus" />
+              <label className="text-[0.65rem] font-black uppercase tracking-widest text-[#8899A6] ml-1">Tyre Size (e.g. 155/70 R13) *</label>
+              <input type="text" required value={formData.size} onChange={e => setFormData({...formData, size: e.target.value})} className="w-full h-[48px] px-5 rounded-xl bg-primary border border-border text-white text-[0.85rem] font-bold outline-none focus:border-accent focus:shadow-glow transition-all" />
             </div>
             <div className="space-y-2">
-              <label className="text-[0.65rem] font-black uppercase tracking-widest text-white/30 ml-1">GST Tax (%) *</label>
-              <input type="number" required min="0" max="100" value={formData.gstPercent} onChange={e => setFormData({...formData, gstPercent: Number(e.target.value)})} className="w-full h-[48px] px-5 rounded-xl bg-[#080C14] border border-white/10 text-white text-[0.85rem] font-bold outline-none focus:border-[#FF6A00] transition-all admin-input-focus" />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <label className="text-[0.65rem] font-black uppercase tracking-widest text-white/30 ml-1">Available Units *</label>
-              <input type="number" required min="0" value={formData.currentQty} onChange={e => setFormData({...formData, currentQty: Number(e.target.value)})} className="w-full h-[48px] px-5 rounded-xl bg-[#080C14] border border-white/10 text-white text-[0.85rem] font-bold outline-none focus:border-[#FF6A00] transition-all admin-input-focus" />
-            </div>
-            <div className="space-y-2">
-              <label className="text-[0.65rem] font-black uppercase tracking-widest text-white/30 ml-1">Critical Limit *</label>
-              <input type="number" required min="0" value={formData.minQty} onChange={e => setFormData({...formData, minQty: Number(e.target.value)})} className="w-full h-[48px] px-5 rounded-xl bg-[#080C14] border border-white/10 text-white text-[0.85rem] font-bold outline-none focus:border-[#FF6A00] transition-all admin-input-focus" />
+              <label className="text-[0.65rem] font-black uppercase tracking-widest text-[#8899A6] ml-1">GST Tax (%) *</label>
+              <input type="number" required min="0" max="100" value={formData.gstPercent} onChange={e => setFormData({...formData, gstPercent: Number(e.target.value)})} className="w-full h-[48px] px-5 rounded-xl bg-primary border border-border text-white text-[0.85rem] font-bold outline-none focus:border-accent focus:shadow-glow transition-all" />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-6">
             <div className="space-y-2">
-              <label className="text-[0.65rem] font-black uppercase tracking-widest text-white/30 ml-1">Procurement Value (₹) *</label>
-              <input type="number" required min="0" value={formData.purchasePrice} onChange={e => setFormData({...formData, purchasePrice: Number(e.target.value)})} className="w-full h-[48px] px-5 rounded-xl bg-[#080C14] border border-white/10 text-white text-[0.85rem] font-bold outline-none focus:border-[#FF6A00] transition-all admin-input-focus" />
+              <label className="text-[0.65rem] font-black uppercase tracking-widest text-[#8899A6] ml-1">Stock Quantity (Units) *</label>
+              <input type="number" required min="0" value={formData.currentQty} onChange={e => setFormData({...formData, currentQty: Number(e.target.value)})} className="w-full h-[48px] px-5 rounded-xl bg-primary border border-border text-white text-[0.85rem] font-bold outline-none focus:border-accent focus:shadow-glow transition-all" />
             </div>
             <div className="space-y-2">
-              <label className="text-[0.65rem] font-black uppercase tracking-widest text-white/30 ml-1">Terminal Value (₹) *</label>
-              <input type="number" required min="0" value={formData.sellingPrice} onChange={e => setFormData({...formData, sellingPrice: Number(e.target.value)})} className="w-full h-[48px] px-5 rounded-xl bg-[#080C14] border border-white/10 text-[#FF6A00] text-[0.85rem] font-black outline-none focus:border-[#FF6A00] transition-all admin-input-focus" />
+              <label className="text-[0.65rem] font-black uppercase tracking-widest text-[#8899A6] ml-1">Critical Limit *</label>
+              <input type="number" required min="0" value={formData.minQty} onChange={e => setFormData({...formData, minQty: Number(e.target.value)})} className="w-full h-[48px] px-5 rounded-xl bg-primary border border-border text-white text-[0.85rem] font-bold outline-none focus:border-accent focus:shadow-glow transition-all" />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <label className="text-[0.65rem] font-black uppercase tracking-widest text-[#8899A6] ml-1">Procurement Value (₹) *</label>
+              <input type="number" required min="0" value={formData.purchasePrice} onChange={e => setFormData({...formData, purchasePrice: Number(e.target.value)})} className="w-full h-[48px] px-5 rounded-xl bg-primary border border-border text-white text-[0.85rem] font-bold outline-none focus:border-accent focus:shadow-glow transition-all" />
+            </div>
+            <div className="space-y-2">
+              <label className="text-[0.65rem] font-black uppercase tracking-widest text-[#8899A6] ml-1">Terminal Value (₹) *</label>
+              <input type="number" required min="0" value={formData.sellingPrice} onChange={e => setFormData({...formData, sellingPrice: Number(e.target.value)})} className="w-full h-[48px] px-5 rounded-xl bg-primary border border-border text-accent text-[0.85rem] font-black outline-none focus:border-accent focus:shadow-glow transition-all" />
             </div>
           </div>
 
           <div className="pt-6 flex gap-4">
-            <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 h-[56px] rounded-xl bg-transparent border border-white/20 text-[0.75rem] font-black uppercase tracking-widest text-white hover:bg-white/5 transition-all admin-btn-hover">Cancel</button>
-            <button type="submit" disabled={isReadOnly} className="flex-1 h-[56px] rounded-xl bg-[#FF6A00] text-[0.75rem] font-black uppercase tracking-widest text-white shadow-[0_0_20px_rgba(255,106,0,0.3)] hover:bg-[#e65c00] hover:-translate-y-1 transition-all admin-btn-hover disabled:opacity-50 disabled:cursor-not-allowed">
+            <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 h-[56px] rounded-xl bg-transparent border border-white/20 text-[0.75rem] font-black uppercase tracking-widest text-white hover:bg-white/5 transition-all">Cancel</button>
+            <button type="submit" disabled={isReadOnly} className="flex-1 h-[56px] rounded-xl bg-accent text-primary font-body font-bold text-[0.75rem] uppercase tracking-widest shadow-glow hover:shadow-[0_0_25px_rgba(0,212,255,0.45)] hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
               {isReadOnly ? <><Lock size={14} className="inline mr-2" /> Read Only Mode</> : 'Save Changes'}
             </button>
           </div>
@@ -417,43 +461,43 @@ const Inventory = () => {
       {/* Stat Detail Modal */}
       <Modal isOpen={!!statModal} onClose={() => setStatModal(null)} title={statModal}>
         <div className="space-y-4">
-          <p className="text-[#FF6A00] text-[0.65rem] font-black uppercase tracking-[0.2em] mb-4">Detailed View - {statModal}</p>
+          <p className="text-accent text-[0.65rem] font-black uppercase tracking-[0.2em] mb-4">Detailed View - {statModal}</p>
           <div className="overflow-y-auto max-h-[50vh] pr-2 custom-scrollbar">
             {statModal === 'Total Assets' && products.map(p => (
-              <div key={p.id} className="p-4 bg-[#080C14] border border-white/5 rounded-xl mb-2 flex justify-between items-center">
+              <div key={p.id} className="p-4 bg-primary border border-border rounded-xl mb-2 flex justify-between items-center">
                 <div>
                   <h4 className="font-bold text-white text-sm">{p.name}</h4>
-                  <p className="text-white/40 text-xs">{p.brand} &middot; {p.category}</p>
+                  <p className="text-[#8899A6] text-xs">{p.brand} &middot; {p.category}</p>
                 </div>
                 <div className="text-right">
-                  <p className="font-bold text-[#FF6A00]">₹{p.sellingPrice}</p>
-                  <p className="text-white/40 text-xs">{p.currentQty} Units</p>
+                  <p className="font-bold text-accent">₹{p.sellingPrice}</p>
+                  <p className="text-[#8899A6] text-xs">{p.currentQty} Units</p>
                 </div>
               </div>
             ))}
             {statModal === 'Inventory Valuation' && products.map(p => (
-              <div key={p.id} className="p-4 bg-[#080C14] border border-white/5 rounded-xl mb-2 flex justify-between items-center">
+              <div key={p.id} className="p-4 bg-primary border border-border rounded-xl mb-2 flex justify-between items-center">
                 <div>
                   <h4 className="font-bold text-white text-sm">{p.name}</h4>
-                  <p className="text-white/40 text-xs">{p.currentQty} Units @ ₹{p.sellingPrice}</p>
+                  <p className="text-[#8899A6] text-xs">{p.currentQty} Units @ ₹{p.sellingPrice}</p>
                 </div>
-                <p className="font-bold text-[#10B981]">₹{(p.currentQty * p.sellingPrice).toLocaleString()}</p>
+                <p className="font-bold text-[#00E676]">₹{(p.currentQty * p.sellingPrice).toLocaleString()}</p>
               </div>
             ))}
             {statModal === 'Critical Alerts' && products.filter(p => p.currentQty <= p.minQty).map(p => (
-              <div key={p.id} className="p-4 bg-red-500/5 border border-red-500/20 rounded-xl mb-2 flex justify-between items-center">
+              <div key={p.id} className="p-4 bg-[#FF3D57]/5 border border-[#FF3D57]/20 rounded-xl mb-2 flex justify-between items-center">
                 <div className="flex items-center gap-3">
-                  <AlertTriangle className="text-red-500" size={16} />
+                  <AlertTriangle className="text-[#FF3D57]" size={16} />
                   <div>
                     <h4 className="font-bold text-white text-sm">{p.name}</h4>
-                    <p className="text-red-500/70 text-xs">Stock: {p.currentQty} (Min: {p.minQty})</p>
+                    <p className="text-[#FF3D57]/70 text-xs">Stock: {p.currentQty} (Min: {p.minQty})</p>
                   </div>
                 </div>
-                <button onClick={() => { setStatModal(null); handleEdit(p); }} className="px-3 py-1 bg-red-500/10 text-red-500 rounded text-xs font-bold uppercase hover:bg-red-500/20">Update</button>
+                <button onClick={() => { setStatModal(null); handleEdit(p); }} className="px-3 py-1 bg-[#FF3D57]/10 text-[#FF3D57] rounded text-xs font-bold uppercase hover:bg-[#FF3D57]/20">Update</button>
               </div>
             ))}
             {statModal === 'Critical Alerts' && products.filter(p => p.currentQty <= p.minQty).length === 0 && (
-               <p className="text-white/40 text-sm text-center py-8">No critical alerts at this time.</p>
+               <p className="text-[#8899A6] text-sm text-center py-8">No critical alerts at this time.</p>
             )}
           </div>
         </div>

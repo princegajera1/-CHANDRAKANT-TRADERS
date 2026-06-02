@@ -18,14 +18,13 @@ const billsCol = collection(db, 'bills');
 export const getNextBillNumber = async () => {
   const settingsRef = doc(db, 'settings', 'shop');
   const settingsSnap = await getDoc(settingsRef);
-  const year = new Date().getFullYear();
   
   if (!settingsSnap.exists()) {
-    return "1";
+    return "0001";
   }
   
   const { billCounter } = settingsSnap.data();
-  return String((billCounter || 0) + 1);
+  return String((billCounter || 0) + 1).padStart(4, '0');
 };
 
 export const createBill = async (billData) => {
@@ -61,7 +60,7 @@ export const createBill = async (billData) => {
 
     // Generate Sequential Bill Number (1, 2, 3...)
     const newCounter = (settings.billCounter || 0) + 1;
-    const billNo = String(newCounter);
+    const billNo = String(newCounter).padStart(4, '0');
 
     // Update stocks (with strict validation)
     productSnaps.forEach(({ ref, snap }, index) => {

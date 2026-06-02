@@ -26,6 +26,23 @@ export const PrintInvoice = ({ bill, shopSettings, safeFormatDate, amountToWords
     ];
   }
 
+  // Support amount to words fallback if passed as numberToWords
+  const convertAmountToWords = amountToWords || ((val) => {
+    if (!val) return 'Zero Rupees Only';
+    const a = ['', 'One ', 'Two ', 'Three ', 'Four ', 'Five ', 'Six ', 'Seven ', 'Eight ', 'Nine ', 'Ten ', 'Eleven ', 'Twelve ', 'Thirteen ', 'Fourteen ', 'Fifteen ', 'Sixteen ', 'Seventeen ', 'Eighteen ', 'Nineteen '];
+    const b = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+    if ((val = val.toString()).length > 9) return 'Overflow';
+    let n = ('000000000' + val).substr(-9).match(/^(\d{2})(\d{2})(\d{2})(\d{1})(\d{2})$/);
+    if (!n) return ''; 
+    let str = '';
+    str += (n[1] != 0) ? (a[Number(n[1])] || b[n[1][0]] + ' ' + a[n[1][1]]) + 'Crore ' : '';
+    str += (n[2] != 0) ? (a[Number(n[2])] || b[n[2][0]] + ' ' + a[n[2][1]]) + 'Lakh ' : '';
+    str += (n[3] != 0) ? (a[Number(n[3])] || b[n[3][0]] + ' ' + a[n[3][1]]) + 'Thousand ' : '';
+    str += (n[4] != 0) ? (a[Number(n[4])] || b[n[4][0]] + ' ' + a[n[4][1]]) + 'Hundred ' : '';
+    str += (n[5] != 0) ? ((str != '') ? 'and ' : '') + (a[Number(n[5])] || b[n[5][0]] + ' ' + a[n[5][1]]) + 'Rupees Only' : 'Rupees Only';
+    return str;
+  });
+
   return (
     <>
       <style>{`
@@ -38,8 +55,8 @@ export const PrintInvoice = ({ bill, shopSettings, safeFormatDate, amountToWords
             font-family: 'Times New Roman', Times, serif !important;
           }
           body * { visibility: hidden; }
-          #invoice-print-area, #invoice-print-area * { visibility: visible; }
-          #invoice-print-area { 
+          #bill-print-area, #bill-print-area * { visibility: visible; }
+          #bill-print-area { 
             position: absolute !important; 
             left: 0 !important; 
             top: 0 !important;
@@ -52,14 +69,14 @@ export const PrintInvoice = ({ bill, shopSettings, safeFormatDate, amountToWords
             box-sizing: border-box !important;
           }
           /* Ensure zero top margin */
-          #invoice-print-area > div {
+          #bill-print-area > div {
             margin-top: 0 !important;
           }
         }
       `}</style>
 
       <div className="hidden print:block w-full" style={{ fontFamily: "'Times New Roman', Times, serif", color: '#000' }}>
-        <div id="invoice-print-area">
+        <div id="bill-print-area">
           
           {/* Main Wrapper with 1px solid black border */}
           <div className="border border-black relative flex flex-col" style={{ marginTop: '14px' }}>
@@ -95,19 +112,17 @@ export const PrintInvoice = ({ bill, shopSettings, safeFormatDate, amountToWords
                   {shopSettings?.addressLine2 ? `${shopSettings.addressLine2}, ` : ''}
                   {shopSettings?.city || 'Savarkundla'}, Dist. {shopSettings?.district || 'Amreli'} - {shopSettings?.pin || '364515'}
                 </span>
-                <span className="m-0 mt-0.5 text-center">Mobile: {shopSettings?.mobile || shopSettings?.phone || '9727031027'}</span>
+                <span className="m-0 mt-0.5 text-center font-bold">Mobile: 9924058659</span>
               </div>
             </div>
 
             {/* SECTION B — CUSTOMER + INVOICE INFO */}
             <div className="flex border-b border-black">
-              {/* LEFT COLUMN: Debit Memo */}
+              {/* LEFT COLUMN: Customer info */}
               <div className="flex-[1.2] p-2 border-r border-black">
-                <p className="text-[10px] italic mb-1">Debit Memo</p>
                 <h3 className="text-[13px] font-bold uppercase m-0 leading-tight">M/s. {bill.customerName}</h3>
                 <p className="text-[11px] uppercase m-0 mt-0.5 leading-tight">{bill.customerAddress || '-'}</p>
                 
-                {/* Try to extract city/pin from address if needed, or assume it's in address. */}
                 <p className="text-[11px] uppercase m-0 mt-1">
                   GSTIN: <span className="font-bold">{bill.customerGstin || '-'}</span>
                 </p>
@@ -116,7 +131,7 @@ export const PrintInvoice = ({ bill, shopSettings, safeFormatDate, amountToWords
                 </p>
               </div>
               
-              {/* RIGHT COLUMN: Original Details */}
+              {/* RIGHT COLUMN: Invoice Details */}
               <div className="flex-1 p-2">
                 <table className="w-full text-[11px]">
                   <tbody>
@@ -147,34 +162,29 @@ export const PrintInvoice = ({ bill, shopSettings, safeFormatDate, amountToWords
                 <thead>
                   <tr className="bg-black text-white text-[11px] font-bold border-b border-black">
                     <th className="p-1 border-r border-black font-bold" style={{ width: '6%' }}>Sr.No</th>
-                    <th className="p-1 border-r border-black font-bold text-left" style={{ width: '40%' }}>Product Name</th>
+                    <th className="p-1 border-r border-black font-bold text-left" style={{ width: '48%' }}>Product Name</th>
                     <th className="p-1 border-r border-black font-bold" style={{ width: '10%' }}>HSN</th>
                     <th className="p-1 border-r border-black font-bold text-right" style={{ width: '8%' }}>Qty</th>
                     <th className="p-1 border-r border-black font-bold text-right" style={{ width: '12%' }}>Rate</th>
-                    <th className="p-1 border-r border-black font-bold text-right" style={{ width: '8%' }}>GST%</th>
                     <th className="p-1 font-bold text-right" style={{ width: '16%' }}>Amount</th>
                   </tr>
                 </thead>
                 <tbody>
                   {items.map((item, index) => {
-                    const isZeroGST = item.gstPercent === 0;
-                    const showReverseCharge = isZeroGST && !!bill.customerGstin;
-                    
                     return (
                       <tr key={index} className="align-top border-b border-black last:border-b-0 text-[11px]">
-                        <td className="p-1 text-center border-r border-black">{item.serialNo || (index + 1)}</td>
-                        <td className="p-1 text-left border-r border-black uppercase">
-                          {item.productName}
-                          {showReverseCharge && (
-                            <div className="italic text-[9px] mt-0.5 lowercase first-letter:uppercase">
-                              Reverse Charge Applicable
+                        <td className="p-1 text-center border-r border-black">{index + 1}</td>
+                        <td className="p-1 text-left border-r border-black uppercase font-bold">
+                          <div>{item.productName}</div>
+                          {(item.size || item.tyreSize) && (
+                            <div className="text-[9px] text-gray-500 font-normal normal-case mt-0.5 leading-none">
+                              Tyre Size: {item.size || item.tyreSize}
                             </div>
                           )}
                         </td>
                         <td className="p-1 text-center border-r border-black">{item.hsnCode || '4011'}</td>
                         <td className="p-1 text-right border-r border-black">{item.quantity}</td>
                         <td className="p-1 text-right border-r border-black">{formatIndianNumber(item.unitPrice)}</td>
-                        <td className="p-1 text-right border-r border-black">{item.gstPercent || 0}%</td>
                         <td className="p-1 text-right font-bold">{formatIndianNumber(item.itemTotal)}</td>
                       </tr>
                     );
@@ -182,7 +192,6 @@ export const PrintInvoice = ({ bill, shopSettings, safeFormatDate, amountToWords
                   {/* Empty rows filling */}
                   {emptyRows.map((_, i) => (
                     <tr key={`empty-${i}`} className="align-top border-b border-black last:border-b-0 text-[11px] h-6">
-                      <td className="p-1 border-r border-black"></td>
                       <td className="p-1 border-r border-black"></td>
                       <td className="p-1 border-r border-black"></td>
                       <td className="p-1 border-r border-black"></td>
@@ -197,31 +206,15 @@ export const PrintInvoice = ({ bill, shopSettings, safeFormatDate, amountToWords
                     <td className="border-r border-black"></td>
                     <td className="border-r border-black"></td>
                     <td className="border-r border-black"></td>
-                    <td className="border-r border-black"></td>
                     <td></td>
                   </tr>
                 </tbody>
               </table>
             </div>
 
-            {/* SECTION D — INFO BAR (Serial, IRN, ACK) */}
-            <div className="border-b border-black bg-gray-50/50 p-2 text-[10px]">
-              <div className="flex">
-                <div className="flex-1">
-                  <span className="font-bold">SERIAL NUMBER:</span> <span className="font-normal">{bill.items && bill.items.length > 0 ? bill.items.map(i => i.serialNo).join(', ') : '-'}</span>
-                </div>
-                <div className="flex-1 pl-4">
-                  <span className="font-bold">ACK NO:</span> <span className="font-normal">{bill.ackNo || `202601${String(bill.billNo || '').padStart(4, '0')}`}</span>
-                </div>
-              </div>
-              <div className="flex mt-0.5">
-                <div className="flex-1">
-                  <span className="font-bold">IRN:</span> <span className="font-normal">{bill.items && bill.items.length > 0 ? bill.items[0].serialNo : '-'}</span>
-                </div>
-                <div className="flex-1 pl-4">
-                  <span className="font-bold">ACK DATE:</span> <span className="font-normal">{bill.ackDate ? safeFormatDate(bill.ackDate) : safeFormatDate(bill.createdAt)}</span>
-                </div>
-              </div>
+            {/* SECTION D — SERIAL NUMBER ROW (BELOW TABLE) */}
+            <div className="border-b border-black bg-gray-50/50 p-2 text-[10.5px]">
+              <span className="font-bold">SERIAL NUMBER:</span> <span className="font-normal">{bill.items && bill.items.length > 0 ? bill.items.map(i => i.serialNo).join(', ') : '-'}</span>
             </div>
 
             {/* SECTION E — FOOTER TWO COLUMNS */}
@@ -237,10 +230,10 @@ export const PrintInvoice = ({ bill, shopSettings, safeFormatDate, amountToWords
                 
                 <div className="mt-4 text-[11px]">
                   <p className="m-0 font-bold mb-0.5">Note:</p>
-                  <p className="m-0 uppercase italic">{amountToWords(bill.gstAmount)}</p>
+                  <p className="m-0 uppercase italic">{convertAmountToWords(bill.gstAmount)}</p>
                   
                   <p className="m-0 font-bold mt-2 mb-0.5">Bill Amount:</p>
-                  <p className="m-0 uppercase font-bold">{amountToWords(bill.grandTotal)}</p>
+                  <p className="m-0 uppercase font-bold">{convertAmountToWords(bill.grandTotal)}</p>
                 </div>
               </div>
 

@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import gsap from 'gsap';
 
 export const CountUp = ({ end, prefix = '' }) => {
   const [value, setValue] = useState(0);
@@ -10,59 +11,114 @@ export const CountUp = ({ end, prefix = '' }) => {
       return;
     }
 
-    let startTime;
-    const duration = 1300; // 1.3 seconds
-    
-    const animate = (currentTime) => {
-      if (!startTime) startTime = currentTime;
-      const progress = Math.min((currentTime - startTime) / duration, 1);
-      
-      const easeProgress = 1 - Math.pow(1 - progress, 3);
-      setValue(Math.floor(easeProgress * end));
-      
-      if (progress < 1) {
-        requestAnimationFrame(animate);
-      } else {
-        setValue(end);
+    const obj = { val: 0 };
+    const tween = gsap.to(obj, {
+      val: end,
+      duration: 1.4,
+      ease: 'power3.out',
+      onUpdate: () => {
+        setValue(Math.floor(obj.val));
       }
+    });
+
+    return () => {
+      tween.kill();
     };
-    
-    requestAnimationFrame(animate);
   }, [end]);
 
   return <>{prefix}{prefix === '₹' ? value.toLocaleString('en-IN') : value}</>;
 };
 
-export const StatCard = ({ title, value, icon: Icon, color = 'orange', subValue, onClick, isCurrency = false }) => {
+export const StatCard = ({ title, value, icon: Icon, color = 'cyan', subValue, onClick, isCurrency = false }) => {
+  const cardRef = useRef(null);
+  
   const colors = {
-    blue: 'bg-blue-500/10 text-blue-500',
-    green: 'bg-[#10B981]/10 text-[#10B981]',
-    red: 'bg-red-500/10 text-red-500',
-    orange: 'bg-[#FF6A00]/10 text-[#FF6A00]',
-    purple: 'bg-purple-500/10 text-purple-500',
+    cyan: 'bg-[#00D4FF]/10 text-[#00D4FF]',
+    gold: 'bg-[#FFB800]/10 text-[#FFB800]',
+    green: 'bg-[#00E676]/10 text-[#00E676]',
+    red: 'bg-[#FF3D57]/10 text-[#FF3D57]',
   };
+
+  const borders = {
+    cyan: 'hover:border-[#00D4FF]/40',
+    gold: 'hover:border-[#FFB800]/40',
+    green: 'hover:border-[#00E676]/40',
+    red: 'hover:border-[#FF3D57]/40',
+  };
+
+  useEffect(() => {
+    const card = cardRef.current;
+    if (!card) return;
+
+    const onMouseMove = (e) => {
+      const rect = card.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      const xc = rect.width / 2;
+      const yc = rect.height / 2;
+      const dx = x - xc;
+      const dy = y - yc;
+      
+      const tiltX = (dy / yc) * -6;
+      const tiltY = (dx / xc) * 6;
+
+      gsap.to(card, {
+        rotateX: tiltX,
+        rotateY: tiltY,
+        transformPerspective: 800,
+        ease: 'power2.out',
+        duration: 0.25
+      });
+    };
+
+    const onMouseLeave = () => {
+      gsap.to(card, {
+        rotateX: 0,
+        rotateY: 0,
+        ease: 'power3.out',
+        duration: 0.5
+      });
+    };
+
+    card.addEventListener('mousemove', onMouseMove);
+    card.addEventListener('mouseleave', onMouseLeave);
+
+    return () => {
+      card.removeEventListener('mousemove', onMouseMove);
+      card.removeEventListener('mouseleave', onMouseLeave);
+    };
+  }, []);
 
   return (
     <div 
+      ref={cardRef}
       onClick={onClick}
       className={`
-        p-[1.6rem] rounded-[16px] bg-[#0D1220] border border-white/[0.07]
+        p-[1.6rem] rounded-[16px] bg-[#0D1B2A] border border-[#1E2D3D]
         flex items-start justify-between relative overflow-hidden group h-full
-        transition-all duration-300 hover:-translate-y-1 hover:border-[#FF6A00]/30 hover:bg-[#121A2D]
+        transition-all duration-300 hover:bg-[#111827] shadow-[0_10px_30px_rgba(0,0,0,0.2)]
+        ${borders[color] || borders.cyan}
         ${onClick ? 'cursor-pointer active:scale-[0.98]' : ''}
       `}
+      style={{ transformStyle: 'preserve-3d' }}
     >
-      <div className="relative z-10 space-y-2">
-        <p className="font-body font-[600] text-[0.62rem] text-white/[0.42] tracking-[0.16em] uppercase">{title}</p>
-        <h3 className="font-heading font-[700] text-[1.65rem] text-white leading-none">
+      {/* Gloss reflection overlay */}
+      <div className="absolute inset-0 bg-gradient-to-tr from-white/[0.01] to-white/[0.04] pointer-events-none" />
+
+      <div className="relative z-10 space-y-3" style={{ transform: 'translateZ(20px)' }}>
+        <p className="font-body font-[600] text-[0.62rem] text-[#8899A6] tracking-[0.16em] uppercase">{title}</p>
+        <h3 className="font-heading font-[800] text-[1.8rem] text-white leading-none font-mono tracking-tight">
           <CountUp end={value} prefix={isCurrency ? '₹' : ''} />
         </h3>
         {subValue && (
-          <p className="font-body font-[400] italic text-[0.75rem] text-white/[0.42] lowercase first-letter:uppercase pt-1">{subValue}</p>
+          <p className="font-body font-[500] italic text-[0.68rem] text-[#8899A6]/80 first-letter:uppercase pt-1 tracking-wide">{subValue}</p>
         )}
       </div>
-      <div className={`w-[48px] h-[48px] rounded-[12px] flex items-center justify-center transition-transform duration-300 group-hover:scale-110 ${colors[color] || colors.orange}`}>
-        <Icon size={24} strokeWidth={2.5} />
+      <div 
+        className={`w-[48px] h-[48px] rounded-[12px] flex items-center justify-center transition-all duration-300 group-hover:scale-110 shadow-[0_0_15px_rgba(0,0,0,0.2)] ${colors[color] || colors.cyan}`}
+        style={{ transform: 'translateZ(30px)' }}
+      >
+        <Icon size={22} strokeWidth={2} />
       </div>
     </div>
   );
@@ -70,16 +126,16 @@ export const StatCard = ({ title, value, icon: Icon, color = 'orange', subValue,
 
 export const Badge = ({ children, variant = 'gray', className = '' }) => {
   const variants = {
-    gray: 'bg-white/[0.06] text-white/60 border-white/10',
-    green: 'bg-[#10B981]/10 text-[#10B981] border-[#10B981]/20',
-    blue: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
-    orange: 'bg-[#FF6A00]/10 text-[#FF6A00] border-[#FF6A00]/20',
-    red: 'bg-red-500/10 text-red-500 border-red-500/20',
-    solidOrange: 'bg-[#FF6A00] text-white border-[#FF6A00]',
+    gray: 'bg-white/[0.04] text-[#8899A6] border-white/5',
+    green: 'bg-[#00E676]/10 text-[#00E676] border-[#00E676]/20 shadow-[0_0_10px_rgba(0,230,118,0.05)]',
+    blue: 'bg-[#00D4FF]/10 text-[#00D4FF] border-[#00D4FF]/20 shadow-[0_0_10px_rgba(0,212,255,0.05)]',
+    gold: 'bg-[#FFB800]/10 text-[#FFB800] border-[#FFB800]/20 shadow-[0_0_10px_rgba(255,184,0,0.05)]',
+    red: 'bg-[#FF3D57]/10 text-[#FF3D57] border-[#FF3D57]/20 shadow-[0_0_10px_rgba(255,61,87,0.05)]',
+    solidCyan: 'bg-[#00D4FF] text-[#0A0F1E] border-[#00D4FF] font-black',
   };
 
   return (
-    <span className={`px-3 py-1 rounded-[6px] font-body font-[700] text-[0.65rem] tracking-[0.14em] uppercase border ${variants[variant]} ${className}`}>
+    <span className={`px-2.5 py-1 rounded-[6px] font-body font-[700] text-[0.6rem] tracking-[0.14em] uppercase border ${variants[variant]} ${className}`}>
       {children}
     </span>
   );

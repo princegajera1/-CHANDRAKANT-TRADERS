@@ -7,36 +7,29 @@ export default {
   theme: {
     extend: {
       colors: {
-        brand: {
-          50: '#fff7ed',
-          100: '#ffedd5',
-          200: '#fed7aa',
-          300: '#fdba74',
-          400: '#fb923c',
-          500: '#f97316', // Primary Orange
-          600: '#ea580c',
-          700: '#c2410c',
-          800: '#9a3412',
-          900: '#7c2d12',
-        },
-        navy: {
-          50: '#f8fafc',
-          100: '#f1f5f9',
-          200: '#e2e8f0',
-          300: '#cbd5e1',
-          400: '#94a3b8',
-          500: '#64748b',
-          600: '#475569',
-          700: '#334155',
-          800: '#1e293b', // Dark Navy
-          900: '#0f172a',
-        },
+        primary: 'var(--primary)',
+        secondary: 'var(--secondary)',
+        accent: 'var(--accent)',
+        'accent-gold': 'var(--accent-gold)',
+        'accent-green': 'var(--accent-green)',
+        'accent-red': 'var(--accent-red)',
+        surface: 'var(--surface)',
+        border: 'var(--border)',
+        'text-primary': 'var(--text-primary)',
+        'text-muted': 'var(--text-muted)',
+        glass: 'var(--glass)',
       },
       fontFamily: {
-        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
-        heading: ['"Plus Jakarta Sans"', 'sans-serif'],
+        sans: ['"DM Sans"', '"Plus Jakarta Sans"', 'sans-serif'],
+        heading: ['"Space Grotesk"', '"Syne"', 'sans-serif'],
         mono: ['"JetBrains Mono"', 'monospace'],
       },
+      boxShadow: {
+        glow: '0 0 20px rgba(0, 212, 255, 0.25)',
+        'glow-gold': '0 0 20px rgba(255, 184, 0, 0.25)',
+        'glow-green': '0 0 20px rgba(0, 230, 118, 0.25)',
+        'glow-red': '0 0 20px rgba(255, 61, 87, 0.25)',
+      }
     },
   },
   plugins: [],

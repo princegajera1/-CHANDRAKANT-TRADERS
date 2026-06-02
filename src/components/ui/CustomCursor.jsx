@@ -1,14 +1,32 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import gsap from 'gsap';
 
 const CustomCursor = () => {
-  const [position, setPosition] = useState({ x: 0, y: 0 });
-  const [ringPosition, setRingPosition] = useState({ x: 0, y: 0 });
+  const dotRef = useRef(null);
+  const ringRef = useRef(null);
   const [isHovering, setIsHovering] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
+    if (window.innerWidth < 1024) return;
+
+    // Set initial position
+    gsap.set(dotRef.current, { xPercent: -50, yPercent: -50 });
+    gsap.set(ringRef.current, { xPercent: -50, yPercent: -50 });
+
+    const xDotTo = gsap.quickTo(dotRef.current, 'x', { duration: 0.08, ease: 'power3' });
+    const yDotTo = gsap.quickTo(dotRef.current, 'y', { duration: 0.08, ease: 'power3' });
+
+    const xRingTo = gsap.quickTo(ringRef.current, 'x', { duration: 0.35, ease: 'power3.out' });
+    const yRingTo = gsap.quickTo(ringRef.current, 'y', { duration: 0.35, ease: 'power3.out' });
+
     const onMouseMove = (e) => {
-      setPosition({ x: e.clientX, y: e.clientY });
+      xDotTo(e.clientX);
+      yDotTo(e.clientY);
+
+      xRingTo(e.clientX);
+      yRingTo(e.clientY);
+
       setIsVisible(true);
     };
 
@@ -16,12 +34,14 @@ const CustomCursor = () => {
     const onMouseLeave = () => setIsVisible(false);
 
     const onMouseOver = (e) => {
+      const target = e.target;
       if (
-        e.target.tagName === 'BUTTON' ||
-        e.target.tagName === 'A' ||
-        e.target.closest('button') ||
-        e.target.closest('a') ||
-        e.target.classList.contains('cursor-pointer')
+        target.tagName === 'BUTTON' ||
+        target.tagName === 'A' ||
+        target.closest('button') ||
+        target.closest('a') ||
+        target.classList.contains('cursor-pointer') ||
+        target.closest('.cursor-pointer')
       ) {
         setIsHovering(true);
       } else {
@@ -42,29 +62,17 @@ const CustomCursor = () => {
     };
   }, []);
 
-  useEffect(() => {
-    const followMouse = () => {
-      setRingPosition((prev) => ({
-        x: prev.x + (position.x - prev.x) * 0.15,
-        y: prev.y + (position.y - prev.y) * 0.15,
-      }));
-      requestAnimationFrame(followMouse);
-    };
-    const animationId = requestAnimationFrame(followMouse);
-    return () => cancelAnimationFrame(animationId);
-  }, [position]);
-
   if (typeof window !== 'undefined' && window.innerWidth < 1024) return null;
 
   return (
-    <div className={`pointer-events-none fixed inset-0 z-[9999] transition-opacity duration-300 ${isVisible ? 'opacity-100' : 'opacity-0'} ${isHovering ? 'cursor-active' : ''}`}>
+    <div className={`pointer-events-none fixed inset-0 z-[99999] transition-opacity duration-300 ${isVisible ? 'opacity-100' : 'opacity-0'} ${isHovering ? 'cursor-active' : ''}`}>
       <div 
+        ref={dotRef}
         className="cursor-dot"
-        style={{ left: `${position.x}px`, top: `${position.y}px` }}
       />
       <div 
+        ref={ringRef}
         className="cursor-ring"
-        style={{ left: `${ringPosition.x}px`, top: `${ringPosition.y}px` }}
       />
     </div>
   );

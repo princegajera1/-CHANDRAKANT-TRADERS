@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useBills } from '../hooks/useBills';
-import { Printer, Eye, Link as LinkIcon, Download, Search, Calendar, Trash2, Share2, AlertTriangle } from 'lucide-react';
+import { Printer, Eye, Link as LinkIcon, Download, Search, Calendar, Trash2, Share2, AlertTriangle, Clock, Copy, PlusSquare } from 'lucide-react';
 import { AnimatedNumber } from '../components/ui/AnimatedNumber';
 import { cancelBill } from '../firebase/bills';
 import { moveToTrash } from '../firebase/trash';
@@ -12,16 +12,22 @@ import { doc, getDoc } from 'firebase/firestore';
 import { Modal } from '../components/ui/Modal';
 import { PrintInvoice } from '../components/ui/PrintInvoice';
 import { toast } from 'react-hot-toast';
+import { useNavigate } from 'react-router-dom';
+import gsap from 'gsap';
 
 const Bills = () => {
   const { bills, loading } = useBills();
   const { isReadOnly } = useAuthContext();
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   const [selectedBill, setSelectedBill] = useState(null);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [shopSettings, setShopSettings] = useState(null);
-  const [shareDropdownOpenId, setShareDropdownOpenId] = useState(null);
   const [isDeleting, setIsDeleting] = useState(null);
+
+  const pageRef = useRef(null);
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -31,10 +37,62 @@ const Bills = () => {
     fetchSettings();
   }, []);
 
-  const filteredBills = bills.filter(b => 
-    (b.billNo || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
-    (b.customerName || '').toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // GSAP Entrance Animations
+  useEffect(() => {
+    if (loading) return;
+    const ctx = gsap.context(() => {
+      const tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
+      tl.fromTo('.page-header', 
+        { opacity: 0, y: 30 },
+        { opacity: 1, y: 0, duration: 0.6 }
+      );
+      tl.fromTo('.search-block', 
+        { opacity: 0, y: 20 },
+        { opacity: 1, y: 0, duration: 0.5 },
+        '-=0.4'
+      );
+      tl.fromTo('.table-block', 
+        { opacity: 0, y: 20 },
+        { opacity: 1, y: 0, duration: 0.6 },
+        '-=0.3'
+      );
+    }, pageRef);
+    return () => ctx.revert();
+  }, [loading]);
+
+  // GSAP stagger animations on row renders/search changes
+  useEffect(() => {
+    if (loading) return;
+    const ctx = gsap.context(() => {
+      gsap.fromTo('tbody tr', 
+        { opacity: 0, y: 15 },
+        { opacity: 1, y: 0, stagger: 0.02, duration: 0.4, ease: 'power3.out' }
+      );
+    }, pageRef);
+    return () => ctx.revert();
+  }, [searchTerm, startDate, endDate, loading]);
+
+  const filteredBills = bills.filter(b => {
+    const matchesSearch = (b.billNo || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
+      (b.customerName || '').toLowerCase().includes(searchTerm.toLowerCase());
+    
+    if (!matchesSearch) return false;
+    
+    if (startDate || endDate) {
+      const billDate = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt);
+      if (isNaN(billDate.getTime())) return true;
+      
+      const yyyy = billDate.getFullYear();
+      const mm = String(billDate.getMonth() + 1).padStart(2, '0');
+      const dd = String(billDate.getDate()).padStart(2, '0');
+      const formattedBillDate = `${yyyy}-${mm}-${dd}`;
+      
+      if (startDate && formattedBillDate < startDate) return false;
+      if (endDate && formattedBillDate > endDate) return false;
+    }
+    
+    return true;
+  });
 
   const handleDeleteConfirm = async () => {
     if (isReadOnly) {
@@ -77,15 +135,6 @@ const Bills = () => {
     }, 150);
   };
 
-  const handleDownloadPDF = async (bill) => {
-    try {
-      await generateBillPDF(bill, shopSettings);
-      toast.success('PDF Invoice generated');
-    } catch (err) {
-      toast.error('PDF Generation failed');
-    }
-  };
-
   const numberToWords = (num) => {
     if (!num) return 'Zero Rupees Only';
     const a = ['', 'One ', 'Two ', 'Three ', 'Four ', 'Five ', 'Six ', 'Seven ', 'Eight ', 'Nine ', 'Ten ', 'Eleven ', 'Twelve ', 'Thirteen ', 'Fourteen ', 'Fifteen ', 'Sixteen ', 'Seventeen ', 'Eighteen ', 'Nineteen '];
@@ -102,88 +151,164 @@ const Bills = () => {
     return str;
   };
 
-  if (loading) return <div className="p-8 text-white/50 font-black uppercase tracking-widest text-[0.7rem] animate-pulse">Syncing Terminal Archives...</div>;
+  if (loading) return (
+    <div className="min-h-[50vh] flex items-center justify-center flex-col gap-4">
+      <div className="w-12 h-12 border-4 border-accent/20 border-t-accent rounded-full animate-spin"></div>
+      <p className="text-text-muted font-mono uppercase tracking-[0.2em] text-[0.75rem]">Accessing Terminal Archives...</p>
+    </div>
+  );
 
   return (
-    <div className="space-y-10 pb-16">
+    <div ref={pageRef} className="space-y-10 pb-16">
       
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 animate-page-entrance">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 page-header">
         <div>
-          <h2 className="font-heading font-[800] text-[1.6rem] text-white uppercase">Terminal Archives</h2>
-          <p className="font-body italic font-[400] text-[0.75rem] text-white/40 mt-1 sentence-case first-letter:uppercase">Authorized invoice logs and financial history</p>
+          <h2 className="font-heading font-[800] text-[1.6rem] text-white uppercase tracking-wider">Terminal Archives</h2>
+          <p className="font-body italic font-[400] text-[0.75rem] text-text-muted mt-1 uppercase">Authorized invoice logs and financial history</p>
         </div>
       </div>
 
-      <div className="p-8 rounded-[24px] bg-[#0D1220] border border-white/[0.05] animate-page-entrance" style={{ animationDelay: '0.1s' }}>
-        <div className="relative group">
-          <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-[#FF6A00] transition-colors" size={20} />
-          <input
-            type="text"
-            placeholder="Search by Invoice Number or Client Identity..."
-            className="w-full bg-[#080C14] border border-white/10 rounded-xl py-4 pl-14 pr-6 text-[0.875rem] font-body font-[400] text-white placeholder:text-white/[0.22] placeholder:italic outline-none focus:border-[#FF6A00] transition-all"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
+      <div className="p-8 rounded-[24px] bg-secondary/80 backdrop-blur-md border border-border/50 search-block">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-6 items-center">
+          <div className="relative lg:col-span-6 group w-full">
+            <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-text-muted group-focus-within:text-accent transition-colors" size={20} />
+            <input
+              type="text"
+              placeholder="Search by Invoice Number or Client Identity..."
+              className="w-full bg-primary/40 border border-border/50 rounded-xl py-4.5 pl-14 pr-6 text-[0.875rem] font-body font-[400] text-white placeholder:text-text-muted/60 outline-none focus:border-accent focus:shadow-glow transition-all"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <div className="relative lg:col-span-2 group flex items-center bg-primary/40 border border-border/50 rounded-xl px-4 py-2.5 w-full">
+            <div className="flex flex-col w-full">
+              <span className="text-[0.6rem] font-heading font-black text-text-muted uppercase tracking-widest">From Date</span>
+              <input
+                type="date"
+                className="bg-transparent text-[0.85rem] text-white font-mono font-bold outline-none cursor-pointer w-full mt-0.5"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+              />
+            </div>
+          </div>
+          <div className="relative lg:col-span-2 group flex items-center bg-primary/40 border border-border/50 rounded-xl px-4 py-2.5 w-full">
+            <div className="flex flex-col w-full">
+              <span className="text-[0.6rem] font-heading font-black text-text-muted uppercase tracking-widest">To Date</span>
+              <input
+                type="date"
+                className="bg-transparent text-[0.85rem] text-white font-mono font-bold outline-none cursor-pointer w-full mt-0.5"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+              />
+            </div>
+          </div>
+          <div className="lg:col-span-2 flex gap-2 w-full h-full min-h-[50px]">
+            <button
+              onClick={() => {
+                setSearchTerm('');
+                setStartDate('');
+                setEndDate('');
+              }}
+              className="w-full py-4.5 rounded-xl bg-primary/40 border border-border/50 text-[0.7rem] font-heading font-black uppercase tracking-widest text-text-muted hover:text-white hover:border-accent hover:bg-accent/5 transition-all flex items-center justify-center gap-1.5"
+            >
+              Reset
+            </button>
+          </div>
         </div>
       </div>
 
-      <div className="rounded-[32px] bg-[#0D1220] border border-white/[0.05] overflow-hidden animate-page-entrance" style={{ animationDelay: '0.2s' }}>
+      <div className="rounded-[32px] bg-secondary/80 backdrop-blur-md border border-border/50 overflow-hidden table-block shadow-lg">
         <div className="w-full overflow-x-auto">
           <table className="w-full text-left">
             <thead>
-              <tr className="bg-white/[0.01] border-b border-white/[0.05]">
-                <th className="p-8 font-body font-[600] text-[0.65rem] text-white/[0.36] uppercase tracking-[0.14em]">LOG ID</th>
-                <th className="p-8 font-body font-[600] text-[0.65rem] text-white/[0.36] uppercase tracking-[0.14em]">TIMESTAMP</th>
-                <th className="p-8 font-body font-[600] text-[0.65rem] text-white/[0.36] uppercase tracking-[0.14em]">CLIENT ENTITY</th>
-                <th className="p-8 font-body font-[600] text-[0.65rem] text-white/[0.36] uppercase tracking-[0.14em] text-right">VALUE</th>
-                <th className="p-8 font-body font-[600] text-[0.65rem] text-white/[0.36] uppercase tracking-[0.14em] text-center">PROTOCOL</th>
-                <th className="p-8 font-body font-[600] text-[0.65rem] text-white/[0.36] uppercase tracking-[0.14em] text-right">ACTION</th>
+              <tr className="bg-primary/20 border-b border-border/50">
+                <th className="p-8 font-heading font-[600] text-[0.65rem] text-text-muted uppercase tracking-[0.14em]">LOG ID</th>
+                <th className="p-8 font-heading font-[600] text-[0.65rem] text-text-muted uppercase tracking-[0.14em]">TIMESTAMP</th>
+                <th className="p-8 font-heading font-[600] text-[0.65rem] text-text-muted uppercase tracking-[0.14em]">CLIENT ENTITY</th>
+                <th className="p-8 font-heading font-[600] text-[0.65rem] text-text-muted uppercase tracking-[0.14em] text-right">VALUE</th>
+                <th className="p-8 font-heading font-[600] text-[0.65rem] text-text-muted uppercase tracking-[0.14em] text-center">PROTOCOL</th>
+                <th className="p-8 font-heading font-[600] text-[0.65rem] text-text-muted uppercase tracking-[0.14em] text-right">ACTION</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/[0.03]">
-              {filteredBills.map((bill, i) => (
+            <tbody className="divide-y divide-border/20">
+              {filteredBills.map((bill) => (
                 <tr 
                   key={bill.id} 
                   onClick={() => openViewModal(bill)}
-                  className={`group hover:bg-white/[0.02] cursor-pointer transition-all animate-row-entrance ${bill.status === 'cancelled' ? 'opacity-30' : ''}`}
-                  style={{ animationDelay: `${i * 0.025}s` }}
+                  className={`group hover:bg-primary/25 cursor-pointer transition-all ${bill.status === 'cancelled' ? 'opacity-30' : ''}`}
                 >
                   <td className="p-8">
-                    <span className="font-body font-[700] text-[0.875rem] text-white group-hover:text-[#FF6A00] transition-colors">#{bill.billNo}</span>
+                    <span className="font-mono font-[700] text-[0.875rem] text-white group-hover:text-accent transition-colors">#{bill.billNo}</span>
                   </td>
                   <td className="p-8">
                     <div className="flex flex-col gap-1">
-                      <span className="font-body font-[400] text-[0.78rem] text-white/[0.52] flex items-center gap-2"><Calendar size={14} className="text-[#FF6A00]" /> {safeFormatDate(bill.createdAt)}</span>
-                      <span className="font-body font-[400] text-[0.72rem] text-white/[0.36] ml-[22px]">{safeFormatTime(bill.createdAt)}</span>
+                      <span className="font-mono font-[400] text-[0.78rem] text-white/70 flex items-center gap-2">
+                        <Calendar size={14} className="text-accent" /> {safeFormatDate(bill.createdAt)}
+                      </span>
+                      <span className="font-mono font-[400] text-[0.72rem] text-text-muted ml-[22px] flex items-center gap-1.5">
+                        <Clock size={12} className="text-text-muted/60" /> {safeFormatTime(bill.createdAt)}
+                      </span>
                     </div>
                   </td>
                   <td className="p-8">
-                    <div className="font-body font-[600] text-[0.875rem] text-white uppercase">{bill.customerName}</div>
-                    <div className="font-body font-[400] text-[0.7rem] text-white/[0.38] mt-1 tracking-widest uppercase">{bill.customerPhone}</div>
+                    <div className="font-heading font-[600] text-[0.875rem] text-white uppercase">{bill.customerName}</div>
+                    <div className="font-mono font-[400] text-[0.7rem] text-text-muted mt-1 tracking-widest uppercase">{bill.customerPhone}</div>
                   </td>
                   <td className="p-8 text-right">
-                    <div className="font-heading font-[700] text-[0.95rem] text-[#FF6A00]">
-                      <AnimatedNumber value={bill.grandTotal} prefix="₹" />
+                    <div className="font-mono font-[700] text-[0.95rem] text-accent">
+                      ₹{bill.grandTotal.toLocaleString()}
                     </div>
                   </td>
                   <td className="p-8 text-center">
-                    <span className={`px-4 py-1.5 rounded-lg font-body font-[700] text-[0.62rem] uppercase tracking-[0.08em] border ${bill.paymentMode === 'Credit' ? 'bg-orange-500/10 text-orange-500 border-orange-500/20' : 'bg-green-500/10 text-green-500 border-green-500/20'}`}>
-                      {bill.paymentMode}
-                    </span>
+                    <div className="flex flex-col items-center gap-1.5 justify-center">
+                      <span className={`px-4 py-1.5 rounded-lg font-mono font-[700] text-[0.62rem] uppercase tracking-[0.08em] border ${bill.paymentMode === 'Credit' ? 'bg-accent-gold/10 text-accent-gold border-accent-gold/20' : 'bg-accent-green/10 text-accent-green border-accent-green/20'}`}>
+                        {bill.paymentMode}
+                      </span>
+                      {bill.status === 'cancelled' && (
+                        <span className="px-3 py-1 rounded-lg font-mono font-[700] text-[0.55rem] uppercase tracking-[0.08em] border bg-accent-red/10 text-accent-red border-accent-red/20 flex items-center gap-1">
+                          <AlertTriangle size={10} /> Voided
+                        </span>
+                      )}
+                    </div>
                   </td>
                   <td className="p-8">
                     <div className="flex justify-end gap-3 no-print" onClick={(e) => e.stopPropagation()}>
-                      <button onClick={(e) => { e.stopPropagation(); openViewModal(bill); }} className="w-10 h-10 flex items-center justify-center rounded-xl bg-[#080C14] border border-white/5 text-white/40 hover:text-[#FF6A00] hover:border-[#FF6A00]/50 transition-all admin-btn-hover"><Eye size={18} /></button>
-                      <button onClick={(e) => { e.stopPropagation(); handlePrint(bill); }} className="w-10 h-10 flex items-center justify-center rounded-xl bg-[#080C14] border border-white/5 text-white/40 hover:text-[#FF6A00] hover:border-[#FF6A00]/50 transition-all admin-btn-hover"><Printer size={18} /></button>
+                      <button onClick={(e) => { e.stopPropagation(); openViewModal(bill); }} className="w-10 h-10 flex items-center justify-center rounded-xl bg-primary/40 border border-border/50 text-text-muted hover:text-accent hover:border-accent/40 hover:bg-accent/5 transition-all" title="Quick View"><Eye size={18} /></button>
+                      <button onClick={(e) => { e.stopPropagation(); handlePrint(bill); }} className="w-10 h-10 flex items-center justify-center rounded-xl bg-primary/40 border border-border/50 text-text-muted hover:text-accent hover:border-accent/40 hover:bg-accent/5 transition-all" title="Direct Print"><Printer size={18} /></button>
+                      <button 
+                        onClick={(e) => { 
+                          e.stopPropagation(); 
+                          toast.success('Generating PDF...');
+                          generateBillPDF(bill, shopSettings); 
+                        }} 
+                        className="w-10 h-10 flex items-center justify-center rounded-xl bg-primary/40 border border-border/50 text-text-muted hover:text-accent hover:border-accent/40 hover:bg-accent/5 transition-all"
+                        title="Download PDF"
+                      ><Download size={18} /></button>
+                      <button 
+                        onClick={(e) => { 
+                          e.stopPropagation(); 
+                          navigate('/new-bill', { state: { duplicateBill: bill } }); 
+                        }} 
+                        className="w-10 h-10 flex items-center justify-center rounded-xl bg-primary/40 border border-border/50 text-text-muted hover:text-accent hover:border-accent/40 hover:bg-accent/5 transition-all"
+                        title="Duplicate Bill (Pre-filled)"
+                      ><Copy size={18} /></button>
                       <button 
                         onClick={(e) => { e.stopPropagation(); shareOnWhatsApp(bill, shopSettings); }}
-                        className="w-10 h-10 flex items-center justify-center rounded-xl bg-[#080C14] border border-white/5 text-white/40 hover:text-[#FF6A00] hover:border-[#FF6A00]/50 transition-all admin-btn-hover"
+                        className="w-10 h-10 flex items-center justify-center rounded-xl bg-primary/40 border border-border/50 text-text-muted hover:text-accent-green hover:border-accent-green/40 hover:bg-accent-green/5 transition-all"
+                        title="Share on WhatsApp"
                       ><Share2 size={18} /></button>
-                      <button onClick={(e) => { e.stopPropagation(); setIsDeleting(bill); }} className="w-10 h-10 flex items-center justify-center rounded-xl bg-[#080C14] border border-white/5 text-white/40 hover:text-red-500 hover:border-red-500/50 transition-all admin-btn-hover"><Trash2 size={18} /></button>
+                      <button onClick={(e) => { e.stopPropagation(); setIsDeleting(bill); }} className="w-10 h-10 flex items-center justify-center rounded-xl bg-primary/40 border border-border/50 text-text-muted hover:text-accent-red hover:border-accent-red/40 hover:bg-accent-red/5 transition-all" title="Void & Revert stock"><Trash2 size={18} /></button>
                     </div>
                   </td>
                 </tr>
               ))}
+              {filteredBills.length === 0 && (
+                <tr>
+                  <td colSpan="6" className="p-16 text-center text-text-muted font-heading uppercase tracking-[0.16em]">
+                    No Logs cataloged in this sector
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
@@ -196,8 +321,8 @@ const Bills = () => {
         maxWidth="600px"
         footer={
           <div className="flex gap-4 w-full">
-            <button onClick={() => setIsViewModalOpen(false)} className="flex-1 py-4 rounded-xl bg-transparent border border-white/20 text-[0.75rem] font-black uppercase tracking-widest text-white hover:bg-white/5 transition-all">Close</button>
-            <button onClick={() => handlePrint(selectedBill)} className="flex-1 py-4 rounded-xl bg-[#FF6A00] text-[0.75rem] font-black uppercase tracking-widest text-white shadow-lg shadow-[#FF6A0033] hover:bg-[#e65c00] transition-all flex items-center justify-center gap-2">
+            <button onClick={() => setIsViewModalOpen(false)} className="flex-1 py-4 rounded-xl bg-transparent border border-border/50 text-[0.75rem] font-heading font-black uppercase tracking-widest text-white hover:bg-white/5 transition-all">Close</button>
+            <button onClick={() => handlePrint(selectedBill)} className="flex-1 py-4 rounded-xl bg-accent text-[0.75rem] font-heading font-black uppercase tracking-widest text-primary shadow-glow hover:bg-accent/80 transition-all flex items-center justify-center gap-2">
               <Printer size={18} /> Print
             </button>
           </div>
@@ -205,55 +330,55 @@ const Bills = () => {
       >
         {selectedBill && (
           <div className="space-y-8 p-1">
-            <div className="grid grid-cols-2 gap-8 animate-card-entrance" style={{ animationDelay: '0.06s' }}>
-              <div className="p-6 rounded-2xl bg-[#080C14] border border-white/5">
-                <p className="text-[0.6rem] font-black text-white/20 uppercase tracking-widest mb-2">Authorized Recipient</p>
-                <p className="text-[1.1rem] font-black text-white uppercase leading-tight">{selectedBill.customerName}</p>
-                <p className="text-[0.75rem] font-bold text-[#FF6A00] mt-2">{selectedBill.customerPhone}</p>
+            <div className="grid grid-cols-2 gap-8">
+              <div className="p-6 rounded-2xl bg-primary/40 border border-border/50">
+                <p className="text-[0.6rem] font-heading font-black text-text-muted uppercase tracking-widest mb-2">Authorized Recipient</p>
+                <p className="text-[1.1rem] font-heading font-black text-white uppercase leading-tight">{selectedBill.customerName}</p>
+                <p className="text-[0.75rem] font-mono font-bold text-accent mt-2">{selectedBill.customerPhone}</p>
               </div>
-              <div className="p-6 rounded-2xl bg-[#080C14] border border-white/5 text-right">
-                <p className="text-[0.6rem] font-black text-white/20 uppercase tracking-widest mb-2">Issue Timestamp</p>
-                <p className="text-[1.1rem] font-black text-white">{safeFormatDate(selectedBill.createdAt)}</p>
-                <p className="text-[0.65rem] font-black text-green-500 mt-2 uppercase tracking-widest">{selectedBill.paymentMode} PROTOCOL</p>
+              <div className="p-6 rounded-2xl bg-primary/40 border border-border/50 text-right">
+                <p className="text-[0.6rem] font-heading font-black text-text-muted uppercase tracking-widest mb-2">Issue Timestamp</p>
+                <p className="text-[1.1rem] font-mono font-black text-white">{safeFormatDate(selectedBill.createdAt)}</p>
+                <p className="text-[0.65rem] font-mono font-black text-accent-green mt-2 uppercase tracking-widest">{selectedBill.paymentMode} PROTOCOL</p>
               </div>
             </div>
 
-            <div className="rounded-[24px] border border-white/[0.05] overflow-hidden animate-card-entrance" style={{ animationDelay: '0.12s' }}>
+            <div className="rounded-[24px] border border-border/50 overflow-hidden bg-primary/20">
               <table className="w-full text-left">
-                <thead className="bg-white/[0.02]">
+                <thead className="bg-primary/40 border-b border-border/30">
                   <tr>
-                    <th className="p-5 text-[0.6rem] font-black text-white/30 uppercase tracking-widest">Asset Details</th>
-                    <th className="p-5 text-[0.6rem] font-black text-white/30 uppercase tracking-widest text-center">Qty</th>
-                    <th className="p-5 text-[0.6rem] font-black text-white/30 uppercase tracking-widest text-right">Net Value</th>
+                    <th className="p-5 text-[0.6rem] font-heading font-black text-text-muted uppercase tracking-widest">Asset Details</th>
+                    <th className="p-5 text-[0.6rem] font-heading font-black text-text-muted uppercase tracking-widest text-center">Qty</th>
+                    <th className="p-5 text-[0.6rem] font-heading font-black text-text-muted uppercase tracking-widest text-right">Net Value</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-white/[0.03]">
+                <tbody className="divide-y divide-border/20">
                   {selectedBill.items.map((item, idx) => (
-                    <tr key={idx} className="hover:bg-white/[0.01]">
+                    <tr key={idx} className="hover:bg-primary/10">
                       <td className="p-5">
-                        <p className="text-[0.85rem] font-black text-white uppercase">{item.productName}</p>
-                        <p className="text-[0.65rem] font-bold text-white/20 mt-1 uppercase tracking-widest">Rate: ₹{item.unitPrice}</p>
+                        <p className="text-[0.85rem] font-heading font-black text-white uppercase">{item.productName}</p>
+                        <p className="text-[0.65rem] font-mono font-bold text-text-muted mt-1 uppercase tracking-widest">Rate: ₹{item.unitPrice}</p>
                       </td>
-                      <td className="p-5 text-center font-black text-white/40 text-[0.9rem]">{item.quantity}</td>
-                      <td className="p-5 text-right font-black text-[#FF6A00] text-[0.95rem]">₹{item.itemTotal?.toLocaleString('en-IN')}</td>
+                      <td className="p-5 text-center font-mono font-black text-white/60 text-[0.9rem]">{item.quantity}</td>
+                      <td className="p-5 text-right font-mono font-black text-accent text-[0.95rem]">₹{item.itemTotal?.toLocaleString('en-IN')}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
 
-            <div className="bg-[#FF6A00]/5 p-8 rounded-[24px] border border-[#FF6A00]/10 animate-card-entrance" style={{ animationDelay: '0.18s' }}>
+            <div className="bg-accent/5 p-8 rounded-[24px] border border-accent/20">
               <div className="flex justify-between mb-3">
-                <span className="text-[0.7rem] font-black text-white/20 uppercase tracking-widest">Log Aggregate</span>
-                <span className="text-[0.9rem] font-black text-white/60">₹{selectedBill.subtotal?.toLocaleString('en-IN')}</span>
+                <span className="text-[0.7rem] font-heading font-black text-text-muted uppercase tracking-widest">Log Aggregate</span>
+                <span className="text-[0.9rem] font-mono font-black text-white/70">₹{selectedBill.subtotal?.toLocaleString('en-IN')}</span>
               </div>
-              <div className="flex justify-between mb-5 pb-5 border-b border-[#FF6A00]/10">
-                <span className="text-[0.7rem] font-black text-white/20 uppercase tracking-widest">System Tax (GST)</span>
-                <span className="text-[0.9rem] font-black text-white/60">₹{selectedBill.gstAmount?.toLocaleString('en-IN')}</span>
+              <div className="flex justify-between mb-5 pb-5 border-b border-border/30">
+                <span className="text-[0.7rem] font-heading font-black text-text-muted uppercase tracking-widest">System Tax (GST)</span>
+                <span className="text-[0.9rem] font-mono font-black text-white/70">₹{selectedBill.gstAmount?.toLocaleString('en-IN')}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-[0.8rem] font-black text-white uppercase tracking-widest">Terminal Total</span>
-                <span className="text-[2rem] font-heading font-black text-[#FF6A00] leading-none">₹{selectedBill.grandTotal?.toLocaleString('en-IN')}</span>
+                <span className="text-[0.8rem] font-heading font-black text-white uppercase tracking-widest">Terminal Total</span>
+                <span className="text-[2rem] font-mono font-black text-accent leading-none drop-shadow-[0_0_8px_rgba(0,212,255,0.3)]">₹{selectedBill.grandTotal?.toLocaleString('en-IN')}</span>
               </div>
             </div>
           </div>
@@ -262,12 +387,12 @@ const Bills = () => {
 
       <PrintInvoice bill={selectedBill} shopSettings={shopSettings} safeFormatDate={safeFormatDate} numberToWords={numberToWords} />
 
-      <Modal isOpen={!!isDeleting} onClose={() => setIsDeleting(null)} title={`DELETE BILL #${isDeleting?.billNo}?`}>
+      <Modal isOpen={!!isDeleting} onClose={() => setIsDeleting(null)} title={`VOID BILL #${isDeleting?.billNo}?`}>
         <div className="p-4 text-center space-y-6">
-          <p className="text-white/60 text-[0.9rem] font-medium leading-relaxed">This cannot be undone. The items will be returned to inventory.</p>
+          <p className="text-text-muted text-[0.9rem] font-medium leading-relaxed">This action cannot be undone. System resources will automatically revert the stock quantities to inventory records.</p>
           <div className="flex gap-4 pt-2">
-            <button onClick={() => setIsDeleting(null)} className="flex-1 py-4 rounded-xl bg-transparent border border-[#FF6A00]/20 text-[0.75rem] font-black uppercase tracking-widest text-white/70 hover:text-white hover:bg-[#FF6A00]/10 transition-all admin-btn-hover">Cancel</button>
-            <button onClick={handleDeleteConfirm} className="flex-1 py-4 rounded-xl bg-red-500 text-[0.75rem] font-black uppercase tracking-widest text-white shadow-[0_0_20px_rgba(239,68,68,0.3)] hover:bg-red-600 hover:-translate-y-1 transition-all admin-btn-hover">Delete</button>
+            <button onClick={() => setIsDeleting(null)} className="flex-1 py-4 rounded-xl bg-transparent border border-border/50 text-[0.75rem] font-heading font-black uppercase tracking-widest text-text-muted hover:text-white hover:bg-white/5 transition-all">Cancel</button>
+            <button onClick={handleDeleteConfirm} className="flex-1 py-4 rounded-xl bg-accent-red text-[0.75rem] font-heading font-black uppercase tracking-widest text-white shadow-glow-red hover:bg-accent-red/80 transition-all">Void Bill</button>
           </div>
         </div>
       </Modal>

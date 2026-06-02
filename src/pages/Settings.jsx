@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { db, auth } from '../firebase/config';
 import { toast } from 'react-hot-toast';
-import { doc, getDoc, updateDoc, collection, onSnapshot, query, orderBy, limit, where, addDoc, serverTimestamp, deleteDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, collection, onSnapshot, query, orderBy, limit, where, addDoc, serverTimestamp, deleteDoc, getDocs } from 'firebase/firestore';
 import { updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
 import { Store, Globe, Bell, Shield, Database, Save, Trash2, Link as LinkIcon, Eye, EyeOff, Users, History, UserPlus, Lock, Download, Search, CheckCircle, XCircle, UserCheck } from 'lucide-react';
 import { format } from 'date-fns';
@@ -63,6 +63,7 @@ const Settings = () => {
   const [passwords, setPasswords] = useState({ current: '', new: '', confirm: '' });
   const [showPasswords, setShowPasswords] = useState({ current: false, new: false, confirm: false });
   const [confirmClear, setConfirmClear] = useState('');
+  const [manualBillNum, setManualBillNum] = useState('');
 
   const { products } = useProducts();
   const { customers } = useCustomers();
@@ -239,12 +240,112 @@ const Settings = () => {
     document.body.removeChild(link);
   };
 
-  const handleClearData = () => {
-    if (confirmClear === 'CONFIRM') {
-      toast.success('System wipe initiated (Disabled for safety)');
+  const handleResetBillCounter = async () => {
+    if (isReadOnly) {
+      toast.error('Read-only access — authorization required');
+      return;
+    }
+    if (!window.confirm('Are you absolutely sure you want to reset the invoice counter back to 0001?')) return;
+    try {
+      const settingsRef = doc(db, 'settings', 'shop');
+      await updateDoc(settingsRef, { billCounter: 0 });
+      setSettings(prev => ({ ...prev, billCounter: 0 }));
+      const newSettingsLocal = { ...settings, billCounter: 0 };
+      localStorage.setItem('shopSettings', JSON.stringify(newSettingsLocal));
+      toast.success('Invoice sequence counter reset to 0000 (Next bill will start from 0001)');
+    } catch (err) {
+      toast.error('Failed to reset counter');
+    }
+  };
+
+  const handleSaveManualBillNum = async () => {
+    if (isReadOnly) {
+      toast.error('Read-only access — authorization required');
+      return;
+    }
+    const numVal = parseInt(manualBillNum);
+    if (isNaN(numVal) || numVal < 1) {
+      toast.error('Specify a valid positive starting sequence number');
+      return;
+    }
+    try {
+      const settingsRef = doc(db, 'settings', 'shop');
+      await updateDoc(settingsRef, { billCounter: numVal - 1 });
+      setSettings(prev => ({ ...prev, billCounter: numVal - 1 }));
+      const newSettingsLocal = { ...settings, billCounter: numVal - 1 };
+      localStorage.setItem('shopSettings', JSON.stringify(newSettingsLocal));
+      toast.success(`Invoice counter set to ${numVal - 1} (Next bill will be ${String(numVal).padStart(4, '0')})`);
+      setManualBillNum('');
+    } catch (err) {
+      toast.error('Failed to set manual counter');
+    }
+  };
+
+  const handleWipeProducts = async () => {
+    if (isReadOnly) {
+      toast.error('Read-only access — authorization required');
+      return;
+    }
+    if (confirmClear !== 'DELETE PRODUCTS') {
+      toast.error('Type "DELETE PRODUCTS" in the authorization field to proceed');
+      return;
+    }
+    if (!window.confirm('WARNING: Are you absolutely sure you want to delete ALL products in stock? This cannot be undone.')) return;
+    setSaving(true);
+    try {
+      const snap = await getDocs(collection(db, 'products'));
+      const batchPromises = snap.docs.map(d => deleteDoc(doc(db, 'products', d.id)));
+      await Promise.all(batchPromises);
+      toast.success('All products successfully purged from inventory');
       setConfirmClear('');
-    } else {
-      toast.error('Type CONFIRM to proceed');
+    } catch (err) {
+      toast.error('Failed to wipe products');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSystemWipe = async () => {
+    if (isReadOnly) {
+      toast.error('Read-only access — authorization required');
+      return;
+    }
+    if (confirmClear !== 'WIPE SYSTEM') {
+      toast.error('Type "WIPE SYSTEM" in the authorization field to proceed');
+      return;
+    }
+    if (!window.confirm('CRITICAL WARNING: This will permanently delete ALL bills, payments, customers, products and reset the invoice counter to 0. Are you absolutely sure?')) return;
+    setSaving(true);
+    try {
+      // 1. Delete bills
+      const billsSnap = await getDocs(collection(db, 'bills'));
+      await Promise.all(billsSnap.docs.map(d => deleteDoc(doc(db, 'bills', d.id))));
+
+      // 2. Delete customers
+      const customersSnap = await getDocs(collection(db, 'customers'));
+      await Promise.all(customersSnap.docs.map(d => deleteDoc(doc(db, 'customers', d.id))));
+
+      // 3. Delete products
+      const productsSnap = await getDocs(collection(db, 'products'));
+      await Promise.all(productsSnap.docs.map(d => deleteDoc(doc(db, 'products', d.id))));
+
+      // 4. Delete payments
+      const paymentsSnap = await getDocs(collection(db, 'payments'));
+      await Promise.all(paymentsSnap.docs.map(d => deleteDoc(doc(db, 'payments', d.id))));
+
+      // 5. Reset bill counter
+      const settingsRef = doc(db, 'settings', 'shop');
+      await updateDoc(settingsRef, { billCounter: 0 });
+      setSettings(prev => ({ ...prev, billCounter: 0 }));
+      const newSettingsLocal = { ...settings, billCounter: 0 };
+      localStorage.setItem('shopSettings', JSON.stringify(newSettingsLocal));
+
+      toast.success('Complete system wipe and database reset successful');
+      setConfirmClear('');
+    } catch (err) {
+      toast.error('Wipe failed: ' + err.message);
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -336,8 +437,12 @@ const Settings = () => {
                     <input value={settings.pin} onChange={e => setSettings({...settings, pin: e.target.value})} className="w-full h-[52px] px-5 rounded-xl text-[0.875rem] font-body font-[400] bg-[#080C14] border border-white/10 text-white outline-none focus:border-[#FF6A00] transition-all" />
                   </div>
                   <div className="space-y-2">
-                    <label className="font-body font-[600] text-[0.65rem] text-white/[0.46] uppercase tracking-[0.12em] ml-1">Mobile Number</label>
+                    <label className="font-body font-[600] text-[0.65rem] text-white/[0.46] uppercase tracking-[0.12em] ml-1">Mobile Number 1</label>
                     <input value={settings.phone} onChange={e => setSettings({...settings, phone: e.target.value})} className="w-full h-[52px] px-5 rounded-xl text-[0.875rem] font-body font-[400] bg-[#080C14] border border-white/10 text-white outline-none focus:border-[#FF6A00] transition-all" />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="font-body font-[600] text-[0.65rem] text-white/[0.46] uppercase tracking-[0.12em] ml-1">Mobile Number 2</label>
+                    <input value={settings.phone2 || ''} onChange={e => setSettings({...settings, phone2: e.target.value})} className="w-full h-[52px] px-5 rounded-xl text-[0.875rem] font-body font-[400] bg-[#080C14] border border-white/10 text-white outline-none focus:border-[#FF6A00] transition-all" />
                   </div>
                   <div className="md:col-span-2 space-y-2">
                     <label className="font-body font-[600] text-[0.65rem] text-white/[0.46] uppercase tracking-[0.12em] ml-1">Email (Optional)</label>
@@ -457,6 +562,51 @@ const Settings = () => {
                   <div className="md:col-span-2 space-y-2">
                     <label className="font-body font-[600] text-[0.65rem] text-white/[0.46] uppercase tracking-[0.12em] ml-1">Terms & Conditions</label>
                     <textarea value={settings.termsConditions} onChange={e => setSettings({...settings, termsConditions: e.target.value})} className="w-full h-[120px] p-5 rounded-xl text-[0.875rem] font-body font-[400] bg-[#080C14] border border-white/10 text-white outline-none focus:border-[#FF6A00] transition-all resize-none" />
+                  </div>
+                </div>
+              </div>
+
+              {/* SECTION 5 — Bill Settings (Invoice Counter Control) */}
+              <div className="space-y-8 pt-10 border-t border-white/5">
+                <div className="flex items-center gap-3 border-b border-white/5 pb-6">
+                  <Database size={20} className="text-[#FF6A00]" />
+                  <h3 className="font-body font-[700] text-[0.72rem] text-white/[0.50] uppercase tracking-[0.18em]">SECTION 5 — Bill Settings (Invoice Counter Control)</h3>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/5 space-y-4">
+                    <h4 className="font-body font-[700] text-[0.9rem] text-white uppercase">Reset Invoice Sequence</h4>
+                    <p className="font-body font-[400] text-[0.7rem] text-white/40 leading-relaxed">
+                      Reset the sequential invoice number counter back to 0001. All subsequent invoices will follow from 0001.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={handleResetBillCounter}
+                      className="h-[42px] px-6 rounded-xl bg-red-500 hover:bg-red-600 text-white font-body font-[700] text-[0.7rem] uppercase tracking-[0.1em] shadow-lg transition-all admin-btn-hover"
+                    >
+                      Reset to 0001
+                    </button>
+                  </div>
+                  <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/5 space-y-4">
+                    <h4 className="font-body font-[700] text-[0.9rem] text-white uppercase">Manually Override Invoice Number</h4>
+                    <p className="font-body font-[400] text-[0.7rem] text-white/40 leading-relaxed">
+                      Set the next invoice sequence number manually. Submitting a new invoice will start from this number.
+                    </p>
+                    <div className="flex gap-4 items-center">
+                      <input
+                        type="number"
+                        placeholder="Next sequence (e.g. 42)"
+                        className="flex-1 h-[42px] px-4 rounded-xl text-[0.875rem] font-body font-[400] bg-[#080C14] border border-white/10 text-white outline-none focus:border-[#FF6A00] transition-all"
+                        value={manualBillNum}
+                        onChange={e => setManualBillNum(e.target.value)}
+                      />
+                      <button
+                        type="button"
+                        onClick={handleSaveManualBillNum}
+                        className="h-[42px] px-6 rounded-xl bg-[#FF6A00] text-white font-body font-[700] text-[0.7rem] uppercase tracking-[0.1em] shadow-lg transition-all admin-btn-hover"
+                      >
+                        Save Sequence
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -796,23 +946,57 @@ const Settings = () => {
                 ))}
               </div>
 
-              <div className="mt-12 p-8 rounded-2xl bg-red-500/5 border border-red-500/20">
-                <div className="flex items-center gap-3 mb-6">
+              <div className="mt-12 p-8 rounded-2xl bg-red-500/5 border border-red-500/20 space-y-8">
+                <div className="flex items-center gap-3 border-b border-red-500/20 pb-4">
                   <Trash2 size={24} className="text-red-500" />
                   <div>
                     <h4 className="font-body font-[700] text-red-500 text-[1rem]">Danger Zone</h4>
-                    <p className="text-white/40 text-[0.75rem] font-body font-[400] italic mt-1">Permanently erase all system data. This action is irreversible.</p>
+                    <p className="text-white/40 text-[0.75rem] font-body font-[400] italic mt-1">Permanently erase data or reset the database. These actions are irreversible.</p>
                   </div>
                 </div>
-                <div className="flex flex-col md:flex-row gap-4">
-                  <input 
-                    type="text" 
-                    placeholder="Type CONFIRM to authorize" 
-                    value={confirmClear}
-                    onChange={e => setConfirmClear(e.target.value)}
-                    className="flex-1 h-[52px] px-5 rounded-xl text-[0.875rem] font-body font-[400] bg-[#080C14] border border-white/10 text-white outline-none focus:border-red-500 transition-all admin-input-focus placeholder:font-body placeholder:italic placeholder:text-[0.875rem] placeholder:text-white/20" 
-                  />
-                  <button onClick={handleClearData} className="h-[52px] px-8 rounded-xl bg-red-500 text-white font-body font-[700] text-[0.75rem] uppercase tracking-[0.12em] hover:bg-red-600 transition-colors">Clear All Data</button>
+
+                <div className="flex flex-col gap-6">
+                  {/* Authorization Code Input */}
+                  <div className="space-y-2">
+                    <label className="font-body font-[600] text-[0.65rem] text-white/[0.46] uppercase tracking-[0.12em]">Authorization Input Field</label>
+                    <input 
+                      type="text" 
+                      placeholder="Type 'DELETE PRODUCTS' or 'WIPE SYSTEM' to authorize" 
+                      value={confirmClear}
+                      onChange={e => setConfirmClear(e.target.value)}
+                      className="w-full h-[52px] px-5 rounded-xl text-[0.875rem] font-body font-[400] bg-[#080C14] border border-white/10 text-white outline-none focus:border-red-500 transition-all placeholder:font-body placeholder:italic placeholder:text-[0.875rem] placeholder:text-white/20" 
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="p-6 rounded-xl bg-white/[0.01] border border-white/5 space-y-4">
+                      <h5 className="font-body font-[700] text-white text-[0.85rem] uppercase">Purge All Inventory</h5>
+                      <p className="font-body font-[400] text-[0.7rem] text-white/40 leading-relaxed">
+                        Delete all products currently listed in the inventory registry.
+                      </p>
+                      <button 
+                        type="button"
+                        onClick={handleWipeProducts} 
+                        className="w-full h-[46px] rounded-xl bg-red-500/10 border border-red-500/30 hover:bg-red-500 hover:text-white text-red-500 font-body font-[700] text-[0.7rem] uppercase tracking-[0.1em] transition-all"
+                      >
+                        Wipe Products
+                      </button>
+                    </div>
+
+                    <div className="p-6 rounded-xl bg-white/[0.01] border border-white/5 space-y-4">
+                      <h5 className="font-body font-[700] text-white text-[0.85rem] uppercase">Full System Reset</h5>
+                      <p className="font-body font-[400] text-[0.7rem] text-white/40 leading-relaxed">
+                        Wipe all invoices, customer files, product logs, and reset the bill counter sequence back to 0.
+                      </p>
+                      <button 
+                        type="button"
+                        onClick={handleSystemWipe} 
+                        className="w-full h-[46px] rounded-xl bg-red-500 text-white font-body font-[700] text-[0.7rem] uppercase tracking-[0.1em] shadow-lg shadow-red-500/20 hover:bg-red-600 transition-all"
+                      >
+                        Reset Admin Panel
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

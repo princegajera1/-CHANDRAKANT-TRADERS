@@ -1,16 +1,27 @@
-@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Inter:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400;1,500&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --bg-primary: #080C14;
-  --bg-secondary: #0D1220;
-  --bg-card: #111827;
+  --primary:       #0A0F1E;   /* Deep Navy Black - main bg */
+  --secondary:     #0D1B2A;   /* Dark Navy - card bg */
+  --accent:        #00D4FF;   /* Electric Cyan - primary CTA, highlights */
+  --accent-gold:   #FFB800;   /* Premium Gold - important badges, revenue */
+  --accent-green:  #00E676;   /* Profit Green - positive values */
+  --accent-red:    #FF3D57;   /* Alert Red - low stock, losses */
+  --surface:       #111827;   /* Card surface */
+  --border:        #1E2D3D;   /* Subtle border */
+  --text-primary:  #F0F4F8;   /* White text */
+  --text-muted:    #8899A6;   /* Secondary text */
+  --glass:         rgba(255,255,255,0.04); /* Glassmorphism */
+
+  --bg-primary: var(--primary);
+  --bg-secondary: var(--secondary);
+  --bg-card: var(--surface);
   
-  --font-heading: 'Barlow Condensed', sans-serif;
-  --font-body: 'Inter', sans-serif;
+  --font-heading: 'Space Grotesk', 'Syne', sans-serif;
+  --font-body: 'DM Sans', 'Plus Jakarta Sans', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
 
   /* FONT SIZES */
   --fs-page-heading: clamp(1.4rem, 4vw, 1.75rem);
@@ -69,25 +80,80 @@
   --lh-btn: 1.0;
 
   /* COLORS */
-  --c-primary-heading: rgba(255, 255, 255, 1);
-  --c-secondary-heading: rgba(255, 255, 255, 0.4);
-  --c-card-val: rgba(255, 255, 255, 1);
-  --c-card-label: rgba(255, 255, 255, 0.42);
-  --c-table-th: rgba(255, 255, 255, 0.38);
-  --c-table-td: rgba(255, 255, 255, 0.78);
-  --c-table-td-important: rgba(255, 255, 255, 1);
-  --c-orange: #FF6A00;
-  --c-muted: rgba(255, 255, 255, 0.32);
-  --c-nav-inactive: rgba(255, 255, 255, 0.52);
-  --c-nav-active: rgba(255, 255, 255, 1);
-  --c-form-label: rgba(255, 255, 255, 0.5);
-  --c-form-input: rgba(255, 255, 255, 0.9);
-  --c-form-placeholder: rgba(255, 255, 255, 0.22);
+  --c-primary-heading: var(--text-primary);
+  --c-secondary-heading: var(--text-muted);
+  --c-card-val: var(--text-primary);
+  --c-card-label: var(--text-muted);
+  --c-table-th: rgba(240, 244, 248, 0.4);
+  --c-table-td: rgba(240, 244, 248, 0.8);
+  --c-table-td-important: var(--text-primary);
+  --c-orange: var(--accent);
+  --c-muted: var(--text-muted);
+  --c-nav-inactive: rgba(240, 244, 248, 0.5);
+  --c-nav-active: var(--text-primary);
+  --c-form-label: rgba(240, 244, 248, 0.6);
+  --c-form-input: var(--text-primary);
+  --c-form-placeholder: rgba(240, 244, 248, 0.25);
+}
+
+/* CUSTOM CURSOR SYSTEM */
+.cursor-dot {
+  position: fixed;
+  width: 6px;
+  height: 6px;
+  background-color: var(--accent);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 99999;
+  pointer-events: none;
+}
+
+.cursor-ring {
+  position: fixed;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--accent);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 99998;
+  pointer-events: none;
+  transition: width 0.2s ease-out, height 0.2s ease-out, background-color 0.2s ease-out, border-color 0.2s ease-out;
+}
+
+.cursor-active .cursor-ring {
+  width: 44px;
+  height: 44px;
+  background-color: rgba(0, 212, 255, 0.08);
+  border-color: var(--accent);
+  box-shadow: 0 0 15px rgba(0, 212, 255, 0.3);
+}
+
+/* GLOW HIGHLIGHTS */
+.glow-text-cyan {
+  text-shadow: 0 0 10px rgba(0, 212, 255, 0.35);
+}
+
+.glow-shadow-cyan {
+  box-shadow: 0 0 20px rgba(0, 212, 255, 0.2);
+}
+
+/* NOISE OVERLAY */
+.noise-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  content: "";
+  opacity: 0.015;
+  z-index: 99990;
+  pointer-events: none;
+  background: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
 }
 
 html, body {
-  background-color: #080C14 !important;
-  color: #FFFFFF !important;
+  background-color: var(--primary) !important;
+  color: var(--text-primary) !important;
   margin: 0;
   padding: 0;
   font-family: var(--font-body);
@@ -420,11 +486,11 @@ html, body {
   background: #080A0F;
 }
 ::window-scrollbar-thumb {
-  background: #FF6B00;
+  background: var(--accent);
   border-radius: 10px;
 }
 ::-webkit-scrollbar-thumb {
-  background: #FF6B00;
+  background: var(--accent);
   border-radius: 10px;
 }
 
@@ -446,8 +512,8 @@ input[type=number] {
 }
 .admin-card-hover:hover {
   transform: scale(1.02);
-  box-shadow: 0 0 15px rgba(255, 107, 0, 0.3);
-  border-color: rgba(255, 107, 0, 0.3) !important;
+  box-shadow: 0 0 20px rgba(0, 212, 255, 0.25);
+  border-color: rgba(0, 212, 255, 0.3) !important;
 }
 
 .admin-btn-hover {
@@ -457,7 +523,7 @@ input[type=number] {
 }
 .admin-btn-hover:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(255, 107, 0, 0.4);
+  box-shadow: 0 6px 20px rgba(0, 212, 255, 0.4);
 }
 .admin-btn-hover:active {
   transform: scale(0.97);
@@ -468,15 +534,15 @@ input[type=number] {
   transition: border-color 0.2s, background-color 0.2s;
 }
 .admin-btn-outline:hover {
-  background-color: rgba(255, 106, 0, 0.08);
+  background-color: rgba(0, 212, 255, 0.08);
 }
 
 .admin-input-focus {
   transition: border-color 0.2s ease, background-color 0.2s ease;
 }
 .admin-input-focus:focus {
-  border-color: #FF6A00;
-  background-color: rgba(255, 106, 0, 0.04) !important;
+  border-color: var(--accent);
+  background-color: rgba(0, 212, 255, 0.04) !important;
 }
 
 /* REDUCED MOTION PREFERENCE */
