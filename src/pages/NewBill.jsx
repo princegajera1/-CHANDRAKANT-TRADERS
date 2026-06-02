@@ -450,12 +450,12 @@ const NewBill = () => {
                 onFocus={() => setShowProductResults(true)}
               />
               {showProductResults && filteredProducts.length > 0 && (
-                <div className="absolute top-full left-0 right-0 mt-3 rounded-2xl bg-secondary/95 border border-border shadow-glow max-h-[400px] overflow-y-auto z-50 custom-scrollbar p-4 backdrop-blur-lg">
+                <div className="absolute top-full left-0 right-0 mt-3 rounded-2xl bg-[#0D1B2A] border border-border shadow-glow max-h-[400px] overflow-y-auto z-50 custom-scrollbar p-4 backdrop-blur-lg">
                   <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                     {filteredProducts.map(p => (
                       <button
                         key={p.id}
-                        className="w-full p-5 flex flex-col justify-between text-left rounded-xl border border-border bg-primary/20 hover:bg-accent/10 hover:border-accent/40 transition-all group"
+                        className="w-full p-5 flex flex-col justify-between text-left rounded-xl border border-border bg-[#080C14] hover:bg-[#FF6B00]/10 hover:border-[#FF6B00]/40 transition-all group"
                         onClick={() => addItem(p)}
                       >
                         <div className="mb-4">
@@ -582,7 +582,7 @@ const NewBill = () => {
                   />
                 </div>
                 {customerSearch && (
-                  <div className="rounded-xl max-h-48 overflow-y-auto bg-primary/95 border border-border shadow-glow p-2 space-y-1 custom-scrollbar z-20 relative backdrop-blur-md">
+                  <div className="rounded-xl max-h-48 overflow-y-auto bg-[#0A0F1E] border border-border shadow-glow p-2 space-y-1 custom-scrollbar z-20 relative">
                     {customers
                       .filter(c => c.name.toLowerCase().includes(customerSearch.toLowerCase()) || c.phone.includes(customerSearch))
                       .map(c => (
