@@ -4,8 +4,8 @@ import { formatIndianNumber } from '../../utils/amountToWords';
 export const PrintInvoice = ({ bill, shopSettings, safeFormatDate, amountToWords }) => {
   if (!bill) return null;
 
-  // Minimum 6 rows logic to fit on a single A4 page
-  const minRows = 6;
+  // Minimum 12 rows logic to fit on a single A4 page and fill the layout
+  const minRows = 12;
   const items = bill.items || [];
   const emptyRowsCount = Math.max(0, minRows - items.length);
   const emptyRows = Array.from({ length: emptyRowsCount });

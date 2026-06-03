@@ -369,6 +369,9 @@ const NewBill = () => {
       }
       
       setSavedBill(finalBill);
+      if (finalBill.customerPhone) {
+        shareOnWhatsApp(finalBill, shopSettings);
+      }
     } catch (error) {
       toast.error('Synchronization Fault');
     } finally {
