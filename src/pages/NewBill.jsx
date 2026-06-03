@@ -6,7 +6,7 @@ import { createBill } from '../firebase/bills';
 import { addCustomer } from '../firebase/customers';
 import { useAuthContext } from '../context/AuthContext';
 import { toast } from 'react-hot-toast';
-import { shareOnWhatsApp } from '../utils/whatsapp';
+import { shareOnWhatsApp, queueWhatsAppBill } from '../utils/whatsapp';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { PrintInvoice } from '../components/ui/PrintInvoice';
@@ -362,7 +362,13 @@ const NewBill = () => {
 
       const result = await createBill(billData);
       toast.success('Invoice Synchronized Successfully');
-      setSavedBill({ ...billData, billNo: result.billNo });
+      const finalBill = { ...billData, billNo: result.billNo };
+      
+      if (shopSettings?.whatsappAutoSend !== false) {
+        await queueWhatsAppBill(finalBill, shopSettings);
+      }
+      
+      setSavedBill(finalBill);
     } catch (error) {
       toast.error('Synchronization Fault');
     } finally {

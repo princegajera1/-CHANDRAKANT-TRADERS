@@ -144,7 +144,7 @@ const Login = () => {
       }
 
       const displayName = profile?.name || user.displayName || user.email.split('@')[0];
-      await logActivity({ ...user, displayName }, 'LOGIN');
+      await logActivity({ ...user, displayName, role: profile?.role }, 'LOGIN');
       toast.success('Access Granted');
       navigate('/dashboard');
     } catch (error) {

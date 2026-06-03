@@ -251,6 +251,7 @@ const Customers = () => {
             <div className="space-y-2">
               <label className="font-body font-[600] text-[0.65rem] text-white/[0.46] uppercase tracking-[0.12em] ml-1">Customer Full Name *</label>
               <input 
+                type="text"
                 className={`w-full h-[52px] px-5 rounded-xl text-[0.875rem] font-body font-[400] bg-[#080C14] border ${formErrors.name ? 'border-red-500' : 'border-white/10'} text-white outline-none focus:border-[#FF6A00] transition-all admin-input-focus`}
                 value={formData.name} onChange={e => { setFormData({...formData, name: e.target.value}); setFormErrors({...formErrors, name: null}); }} 
               />
@@ -259,6 +260,7 @@ const Customers = () => {
             <div className="space-y-2">
               <label className="font-body font-[600] text-[0.65rem] text-white/[0.46] uppercase tracking-[0.12em] ml-1">Phone Number *</label>
               <input 
+                type="text"
                 className={`w-full h-[52px] px-5 rounded-xl text-[0.875rem] font-body font-[400] bg-[#080C14] border ${formErrors.phone ? 'border-red-500' : 'border-white/10'} text-white outline-none focus:border-[#FF6A00] transition-all admin-input-focus`}
                 value={formData.phone} onChange={e => { setFormData({...formData, phone: e.target.value}); setFormErrors({...formErrors, phone: null}); }} 
               />
@@ -278,7 +280,8 @@ const Customers = () => {
             <div className="space-y-2">
               <label className="font-body font-[600] text-[0.65rem] text-white/[0.46] uppercase tracking-[0.12em] ml-1">Vehicle Number *</label>
               <input 
-                className={`w-full h-[52px] px-5 rounded-xl text-[0.875rem] font-body font-[400] uppercase bg-[#080C14] border ${formErrors.vehicleNo ? 'border-red-500' : 'border-white/10'} text-white outline-none focus:border-[#FF6A00] transition-all admin-input-focus`}
+                type="text"
+                className={`w-full h-[52px] px-5 rounded-xl text-[0.875rem] font-body font-[400] uppercase bg-[#080C14] border ${formErrors.vehicleNo ? 'border-red-500' : 'border-white/10'} text-white outline-none focus:border-[#FF6B00] transition-all admin-input-focus`}
                 value={formData.vehicleNo} onChange={e => { setFormData({...formData, vehicleNo: e.target.value}); setFormErrors({...formErrors, vehicleNo: null}); }} 
                 placeholder="e.g. GJ-18-AB-1234"
               />
@@ -299,6 +302,7 @@ const Customers = () => {
             <div className="space-y-2">
               <label className="font-body font-[600] text-[0.65rem] text-white/[0.46] uppercase tracking-[0.12em] ml-1">GSTIN / GST Number (Optional)</label>
               <input 
+                type="text"
                 className={`w-full h-[52px] px-5 rounded-xl text-[0.875rem] font-body font-[400] uppercase bg-[#080C14] border ${formErrors.gstin ? 'border-red-500' : 'border-white/10'} text-white outline-none focus:border-[#FF6A00] transition-all admin-input-focus`}
                 value={formData.gstin} onChange={handleGSTINChange} 
                 placeholder="e.g. 24ABCDE1234F1Z5"
@@ -312,6 +316,7 @@ const Customers = () => {
             <div className="space-y-2">
               <label className="font-body font-[600] text-[0.65rem] text-white/[0.46] uppercase tracking-[0.12em] ml-1">PAN Number {formData.gstin && '*'}</label>
               <input 
+                type="text"
                 className={`w-full h-[52px] px-5 rounded-xl text-[0.875rem] font-body font-[400] uppercase bg-[#080C14] border ${formErrors.pan ? 'border-red-500' : 'border-white/10'} text-white outline-none focus:border-[#FF6A00] transition-all admin-input-focus`}
                 value={formData.pan} onChange={e => { setFormData({...formData, pan: e.target.value.toUpperCase()}); setFormErrors({...formErrors, pan: null}); }} 
                 placeholder="e.g. ABCDE1234F"
@@ -339,6 +344,7 @@ const Customers = () => {
             <div className="space-y-2">
               <label className="font-body font-[600] text-[0.65rem] text-white/[0.46] uppercase tracking-[0.12em] ml-1">Transporter (Optional)</label>
               <input 
+                type="text"
                 className="w-full h-[52px] px-5 rounded-xl text-[0.875rem] font-body font-[400] bg-[#080C14] border border-white/10 text-white outline-none focus:border-[#FF6A00] transition-all admin-input-focus"
                 value={formData.transporter} onChange={e => setFormData({...formData, transporter: e.target.value})}
               />
@@ -349,6 +355,7 @@ const Customers = () => {
             <div className="space-y-2">
               <label className="font-body font-[600] text-[0.65rem] text-white/[0.46] uppercase tracking-[0.12em] ml-1">Bank Name (Optional)</label>
               <input 
+                type="text"
                 className="w-full h-[52px] px-5 rounded-xl text-[0.875rem] font-body font-[400] bg-[#080C14] border border-white/10 text-white outline-none focus:border-[#FF6A00] transition-all admin-input-focus"
                 value={formData.bankName} onChange={e => setFormData({...formData, bankName: e.target.value})}
               />
@@ -356,6 +363,7 @@ const Customers = () => {
             <div className="space-y-2">
               <label className="font-body font-[600] text-[0.65rem] text-white/[0.46] uppercase tracking-[0.12em] ml-1">Account Number (Optional)</label>
               <input 
+                type="text"
                 className="w-full h-[52px] px-5 rounded-xl text-[0.875rem] font-body font-[400] bg-[#080C14] border border-white/10 text-white outline-none focus:border-[#FF6A00] transition-all admin-input-focus"
                 value={formData.accountNumber} onChange={e => setFormData({...formData, accountNumber: e.target.value})}
               />
@@ -363,6 +371,7 @@ const Customers = () => {
             <div className="space-y-2">
               <label className="font-body font-[600] text-[0.65rem] text-white/[0.46] uppercase tracking-[0.12em] ml-1">IFSC Code (Optional)</label>
               <input 
+                type="text"
                 className="w-full h-[52px] px-5 rounded-xl text-[0.875rem] font-body font-[400] uppercase bg-[#080C14] border border-white/10 text-white outline-none focus:border-[#FF6A00] transition-all admin-input-focus"
                 value={formData.ifscCode} onChange={e => setFormData({...formData, ifscCode: e.target.value.toUpperCase()})}
               />

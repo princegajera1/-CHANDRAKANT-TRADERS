@@ -4,8 +4,8 @@ import { formatIndianNumber } from '../../utils/amountToWords';
 export const PrintInvoice = ({ bill, shopSettings, safeFormatDate, amountToWords }) => {
   if (!bill) return null;
 
-  // Minimum 8 rows logic
-  const minRows = 8;
+  // Minimum 6 rows logic to fit on a single A4 page
+  const minRows = 6;
   const items = bill.items || [];
   const emptyRowsCount = Math.max(0, minRows - items.length);
   const emptyRows = Array.from({ length: emptyRowsCount });
@@ -49,7 +49,7 @@ export const PrintInvoice = ({ bill, shopSettings, safeFormatDate, amountToWords
         @media print {
           @page { 
             size: A4 portrait; 
-            margin: 8mm; 
+            margin: 6mm; 
           }
           body {
             visibility: hidden !important;
@@ -61,7 +61,7 @@ export const PrintInvoice = ({ bill, shopSettings, safeFormatDate, amountToWords
             left: 0 !important; 
             top: 0 !important;
             width: 100% !important;
-            max-width: 194mm !important;
+            max-width: 198mm !important;
             margin: 0 !important;
             padding: 0 !important;
             background-color: white !important;
@@ -70,7 +70,7 @@ export const PrintInvoice = ({ bill, shopSettings, safeFormatDate, amountToWords
           }
           /* Ensure proper top margin to prevent TAX INVOICE badge clipping */
           #bill-print-area > div {
-            margin-top: 16px !important;
+            margin-top: 10px !important;
           }
         }
       `}</style>
@@ -79,7 +79,7 @@ export const PrintInvoice = ({ bill, shopSettings, safeFormatDate, amountToWords
         <div id="bill-print-area">
           
           {/* Main Wrapper with 1px solid black border */}
-          <div className="border border-black relative flex flex-col" style={{ marginTop: '14px' }}>
+          <div className="border border-black relative flex flex-col min-h-[275mm]" style={{ marginTop: '10px' }}>
             
             {/* TAX INVOICE Badge */}
             <div className="absolute w-full flex justify-center left-0" style={{ top: '-14px' }}>
@@ -112,7 +112,7 @@ export const PrintInvoice = ({ bill, shopSettings, safeFormatDate, amountToWords
                   {shopSettings?.addressLine2 ? `${shopSettings.addressLine2}, ` : ''}
                   {shopSettings?.city || 'Savarkundla'}, Dist. {shopSettings?.district || 'Amreli'} - {shopSettings?.pin || '364515'}
                 </span>
-                <span className="m-0 mt-0.5 text-center font-bold">Mobile: 9924058659</span>
+                <span className="m-0 mt-0.5 text-center font-bold">Mobile: {shopSettings?.mobile || '9924058659'}</span>
               </div>
             </div>
 
@@ -151,13 +151,19 @@ export const PrintInvoice = ({ bill, shopSettings, safeFormatDate, amountToWords
                       <td>Transporter</td>
                       <td className="font-bold">: {bill.transporter || '-'}</td>
                     </tr>
+                    <tr>
+                      <td>Serial No.</td>
+                      <td className="font-bold" style={{ wordBreak: 'break-all' }}>
+                        : {bill.items && bill.items.length > 0 ? bill.items.map(i => i.serialNo).filter(Boolean).join(', ') || '-' : '-'}
+                      </td>
+                    </tr>
                   </tbody>
                 </table>
               </div>
             </div>
 
             {/* SECTION C — PRODUCT TABLE */}
-            <div className="w-full border-b border-black min-h-[250px]">
+            <div className="w-full border-b border-black flex-1">
               <table className="w-full border-collapse h-full">
                 <thead>
                   <tr className="bg-black text-white text-[11px] font-bold border-b border-black">
@@ -172,7 +178,7 @@ export const PrintInvoice = ({ bill, shopSettings, safeFormatDate, amountToWords
                 <tbody>
                   {items.map((item, index) => {
                     return (
-                      <tr key={index} className="align-top border-b border-black last:border-b-0 text-[11px]">
+                      <tr key={index} className="align-top border-b border-black last:border-b-0 text-[11px] h-7">
                         <td className="p-1 text-center border-r border-black">{index + 1}</td>
                         <td className="p-1 text-left border-r border-black uppercase font-bold">
                           <div>{item.productName}</div>
@@ -191,7 +197,7 @@ export const PrintInvoice = ({ bill, shopSettings, safeFormatDate, amountToWords
                   })}
                   {/* Empty rows filling */}
                   {emptyRows.map((_, i) => (
-                    <tr key={`empty-${i}`} className="align-top border-b border-black last:border-b-0 text-[11px] h-6">
+                    <tr key={`empty-${i}`} className="align-top border-b border-black last:border-b-0 text-[11px] h-7">
                       <td className="p-1 border-r border-black"></td>
                       <td className="p-1 border-r border-black"></td>
                       <td className="p-1 border-r border-black"></td>
@@ -200,40 +206,28 @@ export const PrintInvoice = ({ bill, shopSettings, safeFormatDate, amountToWords
                       <td className="p-1"></td>
                     </tr>
                   ))}
-                  <tr className="flex-1">
-                    <td className="border-r border-black"></td>
-                    <td className="border-r border-black"></td>
-                    <td className="border-r border-black"></td>
-                    <td className="border-r border-black"></td>
-                    <td className="border-r border-black"></td>
-                    <td></td>
-                  </tr>
                 </tbody>
               </table>
             </div>
 
-            {/* SECTION D — SERIAL NUMBER ROW (BELOW TABLE) */}
-            <div className="border-b border-black bg-gray-50/50 p-2 text-[10.5px]">
-              <span className="font-bold">SERIAL NUMBER:</span> <span className="font-normal">{bill.items && bill.items.length > 0 ? bill.items.map(i => i.serialNo).join(', ') : '-'}</span>
-            </div>
-
             {/* SECTION E — FOOTER TWO COLUMNS */}
-            <div className="flex border-b border-black min-h-[140px]">
+            <div className="flex border-b border-black min-h-[120px]">
               {/* LEFT COLUMN: Bank Details & Amount Words */}
               <div className="flex-[1.2] p-2 border-r border-black flex flex-col justify-between">
-                <div className="text-[11px] leading-tight">
-                  <p className="m-0 font-bold">GSTIN NO.: {bill.customerGstin || shopSettings?.gstin || shopSettings?.gstNo || '-'}</p>
-                  <p className="m-0 mt-1">Bank: {bill.customerBankName || shopSettings?.bankName || '-'}</p>
-                  <p className="m-0">Bank A/c No.: {bill.customerBankAccount || shopSettings?.bankAccount || shopSettings?.accountNumber || '-'}</p>
-                  <p className="m-0">RTGS/IFSC Code: {bill.customerIfsc || shopSettings?.bankIfsc || shopSettings?.ifscCode || '-'}</p>
+                <div className="text-[10px] leading-tight">
+                  <p className="m-0 font-bold">PAN NO.: {shopSettings?.panNo || '-'}</p>
+                  <p className="m-0 mt-0.5">Bank Name: <span className="font-semibold">{shopSettings?.bankName || '-'}</span></p>
+                  <p className="m-0">A/c No.: <span className="font-semibold">{shopSettings?.bankAccount || '-'}</span></p>
+                  <p className="m-0">IFSC Code: <span className="font-semibold">{shopSettings?.bankIfsc || '-'}</span></p>
+                  {shopSettings?.bankBranch && <p className="m-0">Branch: {shopSettings?.bankBranch}</p>}
                 </div>
                 
-                <div className="mt-4 text-[11px]">
-                  <p className="m-0 font-bold mb-0.5">Note:</p>
-                  <p className="m-0 uppercase italic">{convertAmountToWords(bill.gstAmount)}</p>
+                <div className="mt-2 text-[10px]">
+                  <p className="m-0 font-bold mb-0.5">Tax Amount (in words):</p>
+                  <p className="m-0 uppercase italic text-gray-700">{convertAmountToWords(bill.gstAmount)}</p>
                   
-                  <p className="m-0 font-bold mt-2 mb-0.5">Bill Amount:</p>
-                  <p className="m-0 uppercase font-bold">{convertAmountToWords(bill.grandTotal)}</p>
+                  <p className="m-0 font-bold mt-2 mb-0.5">Total Amount (in words):</p>
+                  <p className="m-0 uppercase font-bold text-gray-900">{convertAmountToWords(bill.grandTotal)}</p>
                 </div>
               </div>
 
@@ -244,8 +238,7 @@ export const PrintInvoice = ({ bill, shopSettings, safeFormatDate, amountToWords
                   <span>₹{formatIndianNumber(bill.subtotal)}</span>
                 </div>
                 
-                <div className="flex-1 p-2 border-b border-black">
-                  <p className="font-bold underline mb-1">Payment Details:</p>
+                <div className="flex-1 p-2 border-b border-black text-[10.5px]">
                   <table className="w-full">
                     <tbody>
                       <tr>
@@ -253,11 +246,11 @@ export const PrintInvoice = ({ bill, shopSettings, safeFormatDate, amountToWords
                         <td className="text-right">₹{formatIndianNumber(bill.subtotal - (bill.discountAmount || 0))}</td>
                       </tr>
                       <tr>
-                        <td>Central Tax:</td>
+                        <td>CGST (9%):</td>
                         <td className="text-right">₹{formatIndianNumber(bill.gstAmount / 2)}</td>
                       </tr>
                       <tr>
-                        <td>State/UT Tax:</td>
+                        <td>SGST (9%):</td>
                         <td className="text-right">₹{formatIndianNumber(bill.gstAmount / 2)}</td>
                       </tr>
                       <tr>
@@ -269,7 +262,7 @@ export const PrintInvoice = ({ bill, shopSettings, safeFormatDate, amountToWords
                 </div>
 
                 {/* Grand Total Box */}
-                <div className="p-2 border-[2px] border-black m-1">
+                <div className="p-2 border-[2px] border-black m-1 bg-gray-50">
                   <div className="flex justify-between font-bold text-[14px]">
                     <span>Grand Total</span>
                     <span>₹{formatIndianNumber(bill.grandTotal)}</span>
@@ -279,10 +272,10 @@ export const PrintInvoice = ({ bill, shopSettings, safeFormatDate, amountToWords
             </div>
 
             {/* SECTION F — TERMS & CONDITIONS + SIGNATURE */}
-            <div className="flex min-h-[80px]">
+            <div className="flex min-h-[70px]">
               <div className="flex-[1.2] p-2">
-                <p className="text-[10px] font-bold mb-1 underline">Terms & Conditions:</p>
-                <div className="text-[9px]">
+                <p className="text-[9px] font-bold mb-0.5 underline">Terms & Conditions:</p>
+                <div className="text-[8px] leading-normal text-gray-700">
                   {tnc.map((term, i) => {
                     const isNumbered = /^\d+\./.test(term);
                     return (
@@ -295,13 +288,22 @@ export const PrintInvoice = ({ bill, shopSettings, safeFormatDate, amountToWords
               </div>
               
               <div className="flex-[0.8] p-2 flex flex-col justify-between items-end text-right">
-                <p className="text-[11px] font-bold m-0 uppercase">For {shopSettings?.shopName || shopSettings?.name || 'CHANDRAKANT TRADERS'}</p>
+                <p className="text-[10px] font-bold m-0 uppercase">For {shopSettings?.shopName || shopSettings?.name || 'CHANDRAKANT TRADERS'}</p>
                 
-                <div className="mt-8">
-                  <div className="w-32 border-b border-black mb-1"></div>
-                  <p className="text-[10px] m-0">(Authorized Signatory)</p>
+                <div className="mt-6">
+                  <div className="w-28 border-b border-black mb-0.5"></div>
+                  <p className="text-[9px] m-0 text-gray-500">(Authorized Signatory)</p>
                 </div>
               </div>
+            </div>
+
+            {/* SECTION G — PREMIUM BRAND FOOTER BAND */}
+            <div className="w-full border-t border-black bg-gray-50 p-2 text-center text-[9px] leading-tight mt-auto">
+              <p className="font-bold m-0 text-black uppercase tracking-wider">{shopSettings?.shopName || 'CHANDRAKANT TRADERS'} — Enterprise Billing Portal</p>
+              <p className="m-0 text-gray-600 mt-0.5">
+                GSTIN: {shopSettings?.gstNo || '-'} | Mob: {shopSettings?.mobile || '9924058659'} | State Code: {shopSettings?.stateCode || '24'} ({shopSettings?.state || 'Gujarat'})
+              </p>
+              <p className="m-0 text-gray-500 italic">Thank you for choosing us for your premium tyre care, nitrogen filling and 3D laser alignment needs!</p>
             </div>
 
           </div>

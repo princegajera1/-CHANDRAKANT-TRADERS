@@ -33,17 +33,31 @@ export const logActivity = async (user, action) => {
       return 'Unknown';
     };
 
-    let role = 'admin';
-    let userName = user.displayName || user.email.split('@')[0];
+    let role = user.role || 'admin';
+    let userName = user.displayName || user.name || user.email.split('@')[0];
 
     if (user.email === 'princegajera944@gmail.com') role = 'superadmin';
     else if (user.email === 'demo@chandrakanttraders.com') {
       role = 'demo';
       userName = `DEMO: ${localStorage.getItem('demo_visitor_name') || 'Visitor'}`;
     }
-    else if (user.email.includes('guest')) role = 'guest';
+    else if (user.email.includes('guest') || role === 'guest') role = 'guest';
 
-    await addDoc(collection(db, 'activityLogs'), {
+    let sessionDuration = null;
+    if (action === 'LOGIN') {
+      localStorage.setItem(`session_start_${user.uid}`, Date.now().toString());
+    } else if (action === 'LOGOUT') {
+      const startTime = localStorage.getItem(`session_start_${user.uid}`);
+      if (startTime) {
+        const diffMs = Date.now() - parseInt(startTime);
+        const mins = Math.floor(diffMs / 60000);
+        const secs = Math.floor((diffMs % 60000) / 1000);
+        sessionDuration = `${mins}m ${secs}s`;
+        localStorage.removeItem(`session_start_${user.uid}`);
+      }
+    }
+
+    const logDoc = {
       userId: user.uid,
       userEmail: user.email,
       userName,
@@ -54,7 +68,13 @@ export const logActivity = async (user, action) => {
       browser: getBrowser(),
       os: getOS(),
       ipAddress
-    });
+    };
+
+    if (sessionDuration) {
+      logDoc.sessionDuration = sessionDuration;
+    }
+
+    await addDoc(collection(db, 'activityLogs'), logDoc);
   } catch (error) {
     console.error("Failed to log activity:", error);
   }

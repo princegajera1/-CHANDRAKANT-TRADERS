@@ -144,16 +144,16 @@ export const Layout = ({ children }) => {
           <div className="flex items-center gap-6">
             <button 
               onClick={() => setIsSidebarOpen(true)}
-              className="p-2.5 rounded-xl lg:hidden transition-all active:scale-95 text-[#00D4FF] bg-[#00D4FF]/10 border border-[#00D4FF]/20"
+              className="p-2.5 rounded-xl lg:hidden transition-all active:scale-95 text-accent bg-accent/10 border border-accent/20"
             >
               <Menu size={22} />
             </button>
             
             <div className="flex items-center flex-shrink-0 whitespace-nowrap overflow-visible group cursor-pointer" onClick={() => navigate('/dashboard')} style={{ gap: '12px' }}>
-              <div className="flex-shrink-0 w-[40px] h-[40px] rounded-[12px] bg-gradient-to-tr from-[#00D4FF] to-[#0088cc] flex items-center justify-center text-[#0A0F1E] font-heading font-[800] text-[1.1rem] shadow-[0_0_20px_rgba(0,212,255,0.35)] group-hover:scale-105 transition-transform duration-300">CT</div>
+              <div className="flex-shrink-0 w-[40px] h-[40px] rounded-[12px] bg-gradient-to-tr from-[#ff6b00] to-[#ff8f1f] flex items-center justify-center text-[#0A0F1E] font-heading font-[800] text-[1.1rem] shadow-[0_0_20px_rgba(255,107,0,0.35)] group-hover:scale-105 transition-transform duration-300">CT</div>
               <div className="hidden sm:block">
                 <h1 className="whitespace-nowrap font-heading font-[800] text-[0.95rem] uppercase tracking-normal" style={{ overflow: 'visible', textOverflow: 'clip' }}>
-                  <span className="text-white">CHANDRAKANT</span> <span className="text-[#00D4FF]">{profile?.name ? profile.name.split(' ')[0] : 'ADMIN'}</span>
+                  <span className="text-white">CHANDRAKANT</span> <span className="text-accent">{profile?.name ? profile.name.split(' ')[0] : 'ADMIN'}</span>
                 </h1>
                 <p className="text-white/[0.38] whitespace-nowrap font-body font-[500] text-[0.58rem] uppercase tracking-[0.18em]">MANAGEMENT SUITE</p>
               </div>
@@ -222,11 +222,11 @@ export const Layout = ({ children }) => {
               onClick={() => navigate('/settings')}
               className="flex items-center gap-4 cursor-pointer p-1 rounded-2xl hover:bg-white/5 transition-all border border-transparent hover:border-white/5 group"
             >
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#00D4FF] to-[#0088cc] flex items-center justify-center text-[#0A0F1E] font-heading font-black text-xl shadow-[0_8px_20px_rgba(0,212,255,0.2)] group-hover:rotate-3 transition-transform">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#ff6b00] to-[#ff8f1f] flex items-center justify-center text-[#0A0F1E] font-heading font-black text-xl shadow-[0_8px_20px_rgba(255,107,0,0.2)] group-hover:rotate-3 transition-transform">
                 {profile?.name?.[0]?.toUpperCase() || 'P'}
               </div>
               <div className="hidden sm:block text-left pr-2">
-                <p className="text-[0.8rem] font-[600] font-body text-white leading-none mb-1.5 group-hover:text-[#00D4FF] transition-colors uppercase tracking-tight">{profile?.name || 'ADMIN'}</p>
+                <p className="text-[0.8rem] font-[600] font-body text-white leading-none mb-1.5 group-hover:text-accent transition-colors uppercase tracking-tight">{profile?.name || 'ADMIN'}</p>
                 <p className="text-[0.65rem] font-[400] font-body text-white/40 uppercase tracking-[0.08em]">{isDemo ? 'DEMO TERMINAL' : isGuest ? 'GUEST CLEARANCE' : 'SYSTEM OWNER'}</p>
               </div>
             </div>
@@ -255,24 +255,24 @@ export const Layout = ({ children }) => {
           <div className="absolute inset-0 bg-[#0A0F1E]/90 backdrop-blur-xl" onClick={() => setShowWelcomeModal(false)}></div>
           <div className="relative w-full max-w-[420px] bg-[#0D1B2A] border border-[#1E2D3D] rounded-[32px] p-10 shadow-2xl animate-[modalEntrance_0.5s_cubic-bezier(0.16,1,0.3,1)_forwards] text-center overflow-hidden">
             {/* Background effects */}
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[150px] bg-[radial-gradient(ellipse_at_top,rgba(0,212,255,0.15)_0%,rgba(10,10,15,0)_70%)] pointer-events-none"></div>
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[150px] bg-[radial-gradient(ellipse_at_top,rgba(255,107,0,0.15)_0%,rgba(10,10,15,0)_70%)] pointer-events-none"></div>
             
-            <div className="w-20 h-20 bg-[#00D4FF]/10 rounded-3xl flex items-center justify-center text-[#00D4FF] mx-auto mb-8 shadow-[0_0_30px_rgba(0,212,255,0.25)]">
+            <div className="w-20 h-20 bg-accent/10 rounded-3xl flex items-center justify-center text-accent mx-auto mb-8 shadow-[0_0_30px_rgba(255,107,0,0.25)]">
               <ShieldCheck size={40} />
             </div>
             
             <h3 className="text-2xl font-heading font-black text-white uppercase tracking-tight leading-tight">
-              Access<br/><span className="text-[#00D4FF]">Authorized</span>
+              Access<br/><span className="text-accent">Authorized</span>
             </h3>
             
             <p className="text-[0.8rem] text-white/50 font-body mt-4 leading-relaxed">
               Welcome back to the terminal, <strong className="text-white">{profile?.name || 'Admin'}</strong>. 
-              Your security clearance level is <span className="uppercase text-[#00D4FF] font-bold tracking-widest">{profile?.role || 'Staff'}</span>.
+              Your security clearance level is <span className="uppercase text-accent font-bold tracking-widest">{profile?.role || 'Staff'}</span>.
             </p>
             
             <button 
               onClick={() => setShowWelcomeModal(false)}
-              className="w-full mt-8 h-[54px] bg-[#00D4FF] text-[#0A0F1E] font-black text-[0.75rem] uppercase tracking-[0.2em] rounded-2xl hover:bg-[#00b2d6] transition-all shadow-xl shadow-[#00D4FF33]"
+              className="w-full mt-8 h-[54px] bg-accent text-[#0A0F1E] font-black text-[0.75rem] uppercase tracking-[0.2em] rounded-2xl hover:bg-[#ff8f1f] transition-all shadow-xl shadow-accent/20"
             >
               Enter Dashboard
             </button>

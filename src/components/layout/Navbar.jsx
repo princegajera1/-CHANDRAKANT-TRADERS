@@ -94,8 +94,8 @@ const Navbar = () => {
             onClick={() => handleLinkClick('/')} 
             className="flex items-center gap-3 group cursor-pointer shrink-0"
           >
-            {/* CT circle logo with cyan/blue (#0EA5E9) for logo only */}
-            <div className="w-[42px] h-[42px] bg-gradient-to-tr from-[#0EA5E9] to-[#0284c7] text-[#0B0F1A] flex items-center justify-center font-heading font-black text-[1.1rem] rounded-full shadow-[0_0_15px_rgba(14,165,233,0.3)] group-hover:scale-105 transition-transform duration-300">
+            {/* CT circle logo with official brand colors */}
+            <div className="w-[42px] h-[42px] bg-gradient-to-tr from-[#ff6b00] to-[#ff8f1f] text-[#0B0F1A] flex items-center justify-center font-heading font-black text-[1.1rem] rounded-full shadow-[0_0_15px_rgba(255,107,0,0.3)] hover:shadow-[0_0_20px_rgba(255,179,71,0.5)] group-hover:scale-105 transition-all duration-300">
               CT
             </div>
             <div>

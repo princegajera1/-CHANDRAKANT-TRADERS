@@ -41,8 +41,8 @@ const Footer = () => {
           {/* COLUMN 1 — BRAND BLOCK (Lg: 4 cols) */}
           <div className="lg:col-span-4 space-y-6">
             <Link to="/" onClick={() => handleLinkClick('#')} className="flex items-center gap-3 group cursor-pointer w-fit">
-              {/* CT circle logo with cyan/blue (#0EA5E9) for logo only */}
-              <div className="w-12 h-12 bg-gradient-to-tr from-[#0EA5E9] to-[#0284c7] text-[#0B0F1A] flex items-center justify-center font-heading font-black text-lg rounded-full shadow-[0_0_15px_rgba(14,165,233,0.25)] group-hover:scale-105 transition-transform duration-300">
+              {/* CT circle logo with official brand colors */}
+              <div className="w-12 h-12 bg-gradient-to-tr from-[#ff6b00] to-[#ff8f1f] text-[#0B0F1A] flex items-center justify-center font-heading font-black text-lg rounded-full shadow-[0_0_15px_rgba(255,107,0,0.25)] hover:shadow-[0_0_20px_rgba(255,179,71,0.5)] group-hover:scale-105 transition-all duration-300">
                 CT
               </div>
               <div>

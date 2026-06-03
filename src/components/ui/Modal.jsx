@@ -49,7 +49,7 @@ export const Modal = ({ isOpen, onClose, title, children, footer, maxWidth = '56
 
   return createPortal(
     <div 
-      className="fixed top-0 left-0 w-[100vw] h-[100vh] z-[99999] flex items-center justify-center"
+      className="fixed top-0 left-0 w-[100vw] h-[100vh] z-[99999] flex items-center justify-center no-print"
     >
       <div 
         className={`absolute inset-0 bg-[rgba(0,0,0,0.7)] backdrop-blur-[8px] ${isExiting ? 'animate-backdrop-fade-out' : 'animate-backdrop-fade'}`} 

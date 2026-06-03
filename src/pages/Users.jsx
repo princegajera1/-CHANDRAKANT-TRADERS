@@ -121,7 +121,7 @@ const Users = () => {
             <input 
               type="text" 
               placeholder="Search directory..." 
-              className="bg-white/5 border border-white/10 rounded-xl py-3 pl-12 pr-6 text-sm text-white outline-none focus:border-[#FF6A00]/50 focus:bg-white/[0.08] transition-all w-full md:w-[300px]"
+              className="bg-[#080C14] border border-white/10 rounded-xl py-3 pl-12 pr-6 text-sm text-white outline-none focus:border-[#FF6A00]/50 focus:bg-white/[0.08] transition-all w-full md:w-[300px]"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -171,7 +171,7 @@ const Users = () => {
             {isSuperAdmin && (
               <button 
                 onClick={() => setIsAddAdminModalOpen(true)}
-                className="bg-[#FF6A00] rounded-2xl p-6 flex items-center justify-center gap-3 text-white font-black uppercase tracking-widest hover:brightness-110 transition-all shadow-xl shadow-[#FF6A0033]"
+                className="bg-[#FF6A00] rounded-2xl p-6 flex items-center justify-center gap-3 text-white font-black uppercase tracking-widest hover:brightness-110 transition-all shadow-xl shadow-[#FF6A0033] cursor-pointer"
               >
                 <UserPlus size={24} /> New Admin Enlistment
               </button>
@@ -204,19 +204,49 @@ const Users = () => {
                       </div>
                     </td>
                     <td className="px-6 py-5">
-                      <span className={`px-3 py-1 rounded-full text-[0.65rem] font-black uppercase tracking-tighter ${
-                        admin.role === 'owner' ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20' : 
-                        admin.role === 'admin' ? 'bg-[#FF6A00]/10 text-[#FF6A00] border border-[#FF6A00]/20' : 
-                        'bg-blue-500/10 text-blue-400 border border-blue-500/20'
-                      }`}>
-                        {admin.role || 'Staff'}
-                      </span>
+                      {isSuperAdmin && admin.role !== 'owner' ? (
+                        <select
+                          value={admin.role || 'staff'}
+                          onChange={(e) => handleRoleChange(admin.id, e.target.value)}
+                          className="bg-[#080C14] border border-white/10 rounded-xl px-3 py-1.5 text-xs text-white outline-none focus:border-[#FF6A00] transition-all cursor-pointer font-bold uppercase tracking-wider"
+                        >
+                          <option value="admin">Admin</option>
+                          <option value="manager">Manager</option>
+                          <option value="staff">Staff</option>
+                          <option value="viewer">Viewer</option>
+                        </select>
+                      ) : (
+                        <span className={`px-3 py-1 rounded-full text-[0.65rem] font-black uppercase tracking-tighter ${
+                          admin.role === 'owner' ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20' : 
+                          admin.role === 'admin' ? 'bg-[#FF6A00]/10 text-[#FF6A00] border border-[#FF6A00]/20' : 
+                          admin.role === 'manager' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' : 
+                          admin.role === 'staff' ? 'bg-green-500/10 text-green-400 border border-green-500/20' : 
+                          'bg-gray-500/10 text-gray-400 border border-gray-500/20'
+                        }`}>
+                          {admin.role || 'Staff'}
+                        </span>
+                      )}
                     </td>
                     <td className="px-6 py-5">
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-[#10B981] animate-pulse"></div>
-                        <span className="text-[0.75rem] font-bold text-[#10B981]">Active</span>
-                      </div>
+                      {isSuperAdmin && admin.role !== 'owner' ? (
+                        <button
+                          onClick={() => handleToggleStatus(admin.id, admin.status)}
+                          className={`px-3 py-1.5 rounded-xl text-[0.65rem] font-black uppercase tracking-wider border transition-all cursor-pointer ${
+                            admin.status === 'disabled' 
+                              ? 'bg-red-500/10 text-red-400 border-red-500/20 hover:bg-red-500/20' 
+                              : 'bg-green-500/10 text-green-400 border-green-500/20 hover:bg-green-500/20'
+                          }`}
+                        >
+                          {admin.status === 'disabled' ? 'Disabled' : 'Active'}
+                        </button>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <div className={`w-2 h-2 rounded-full ${admin.status === 'disabled' ? 'bg-red-500' : 'bg-[#10B981]'} animate-pulse`}></div>
+                          <span className={`text-[0.75rem] font-bold ${admin.status === 'disabled' ? 'text-red-500' : 'text-[#10B981]'}`}>
+                            {admin.status === 'disabled' ? 'Disabled' : 'Active'}
+                          </span>
+                        </div>
+                      )}
                     </td>
                     <td className="px-6 py-5 text-[0.8rem] text-white/40">
                       {admin.createdAt ? (admin.createdAt.toDate ? format(admin.createdAt.toDate(), 'MMM dd, yyyy') : format(new Date(admin.createdAt), 'MMM dd, yyyy')) : 'Pre-Launch'}
@@ -225,7 +255,7 @@ const Users = () => {
                       {isSuperAdmin && admin.role !== 'owner' && (
                         <button 
                           onClick={() => handleDeleteAdmin(admin.id)}
-                          className="p-2 text-white/20 hover:text-red-500 transition-colors"
+                          className="p-2 text-white/20 hover:text-red-500 transition-colors cursor-pointer"
                         >
                           <Trash2 size={18} />
                         </button>
@@ -362,10 +392,24 @@ const Users = () => {
                 />
               </div>
 
+              <div className="space-y-2">
+                <label className="text-[0.65rem] font-black uppercase tracking-widest text-white/30 ml-1">Clearance Role</label>
+                <select 
+                  className="w-full h-[60px] px-6 rounded-2xl bg-[#080C14] border border-white/10 text-white outline-none focus:border-[#FF6A00] transition-all font-bold"
+                  value={newAdmin.role}
+                  onChange={e => setNewAdmin({...newAdmin, role: e.target.value})}
+                >
+                  <option value="admin">Admin</option>
+                  <option value="manager">Manager</option>
+                  <option value="staff">Staff</option>
+                  <option value="viewer">Viewer</option>
+                </select>
+              </div>
+
               <button 
                 type="submit"
                 disabled={saving}
-                className="w-full h-[64px] bg-[#FF6A00] text-white font-black text-[0.9rem] uppercase tracking-[0.25em] rounded-[24px] hover:brightness-110 transition-all shadow-[0_20px_50px_rgba(255,106,0,0.3)] flex items-center justify-center mt-6"
+                className="w-full h-[64px] bg-[#FF6A00] text-white font-black text-[0.9rem] uppercase tracking-[0.25em] rounded-[24px] hover:brightness-110 transition-all shadow-[0_20px_50px_rgba(255,106,0,0.3)] flex items-center justify-center mt-6 cursor-pointer"
               >
                 {saving ? "Granting Access..." : "Finalize Authorization"}
               </button>

@@ -5,7 +5,7 @@
 :root {
   --primary:       #0A0F1E;   /* Deep Navy Black - main bg */
   --secondary:     #0D1B2A;   /* Dark Navy - card bg */
-  --accent:        #00D4FF;   /* Electric Cyan - primary CTA, highlights */
+  --accent:        #ff6b00;   /* Official Orange - primary CTA, highlights */
   --accent-gold:   #FFB800;   /* Premium Gold - important badges, revenue */
   --accent-green:  #00E676;   /* Profit Green - positive values */
   --accent-red:    #FF3D57;   /* Alert Red - low stock, losses */
@@ -123,18 +123,18 @@
 .cursor-active .cursor-ring {
   width: 44px;
   height: 44px;
-  background-color: rgba(0, 212, 255, 0.08);
+  background-color: rgba(255, 107, 0, 0.08);
   border-color: var(--accent);
-  box-shadow: 0 0 15px rgba(0, 212, 255, 0.3);
+  box-shadow: 0 0 15px rgba(255, 107, 0, 0.3);
 }
 
 /* GLOW HIGHLIGHTS */
 .glow-text-cyan {
-  text-shadow: 0 0 10px rgba(0, 212, 255, 0.35);
+  text-shadow: 0 0 10px rgba(255, 107, 0, 0.35);
 }
 
 .glow-shadow-cyan {
-  box-shadow: 0 0 20px rgba(0, 212, 255, 0.2);
+  box-shadow: 0 0 20px rgba(255, 107, 0, 0.2);
 }
 
 /* NOISE OVERLAY */
@@ -512,8 +512,8 @@ input[type=number] {
 }
 .admin-card-hover:hover {
   transform: scale(1.02);
-  box-shadow: 0 0 20px rgba(0, 212, 255, 0.25);
-  border-color: rgba(0, 212, 255, 0.3) !important;
+  box-shadow: 0 0 20px rgba(255, 107, 0, 0.25);
+  border-color: rgba(255, 107, 0, 0.3) !important;
 }
 
 .admin-btn-hover {
@@ -523,7 +523,7 @@ input[type=number] {
 }
 .admin-btn-hover:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(0, 212, 255, 0.4);
+  box-shadow: 0 6px 20px rgba(255, 107, 0, 0.4);
 }
 .admin-btn-hover:active {
   transform: scale(0.97);
@@ -534,9 +534,10 @@ input[type=number] {
   transition: border-color 0.2s, background-color 0.2s;
 }
 .admin-btn-outline:hover {
-  background-color: rgba(0, 212, 255, 0.08);
+  background-color: rgba(255, 107, 0, 0.08);
 }
 
+input,
 input[type="text"], 
 input[type="number"], 
 input[type="date"], 
@@ -546,6 +547,21 @@ select,
 textarea {
   background-color: #080C14 !important;
   color: #FFFFFF !important;
+}
+
+/* webkit autofill override for dark mode consistency */
+input:-webkit-autofill,
+input:-webkit-autofill:hover, 
+input:-webkit-autofill:focus,
+textarea:-webkit-autofill,
+textarea:-webkit-autofill:hover,
+textarea:-webkit-autofill:focus,
+select:-webkit-autofill,
+select:-webkit-autofill:hover,
+select:-webkit-autofill:focus {
+  -webkit-text-fill-color: #ffffff !important;
+  -webkit-box-shadow: 0 0 0px 1000px #080C14 inset !important;
+  transition: background-color 5000s ease-in-out 0s !important;
 }
 
 select option {
@@ -558,7 +574,7 @@ select option {
 }
 .admin-input-focus:focus {
   border-color: var(--accent);
-  background-color: rgba(0, 212, 255, 0.04) !important;
+  background-color: rgba(255, 107, 0, 0.04) !important;
 }
 
 /* REDUCED MOTION PREFERENCE */
@@ -594,6 +610,7 @@ p { max-width: 60ch; }
     background: white !important;
     color: black !important;
     font-family: 'Inter', sans-serif !important;
+    overflow: visible !important;
   }
 
   .print-only-container {

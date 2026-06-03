@@ -17,7 +17,7 @@ import gsap from 'gsap';
 
 const Bills = () => {
   const { bills, loading } = useBills();
-  const { isReadOnly } = useAuthContext();
+  const { isReadOnly, isSuperAdmin } = useAuthContext();
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [startDate, setStartDate] = useState('');
@@ -26,6 +26,27 @@ const Bills = () => {
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [shopSettings, setShopSettings] = useState(null);
   const [isDeleting, setIsDeleting] = useState(null);
+
+  const [isResetModalOpen, setIsResetModalOpen] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
+
+  const handleResetArchives = async () => {
+    if (isReadOnly) return toast.error('Access Denied: Read-Only Mode');
+    setIsResetting(true);
+    try {
+      const querySnapshot = await getDocs(collection(db, 'bills'));
+      const deletePromises = querySnapshot.docs.map(docSnap => deleteDoc(doc(db, 'bills', docSnap.id)));
+      await Promise.all(deletePromises);
+      
+      toast.success('All terminal archives wiped successfully');
+      setIsResetModalOpen(false);
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to wipe archives');
+    } finally {
+      setIsResetting(false);
+    }
+  };
 
   const pageRef = useRef(null);
 
@@ -166,6 +187,14 @@ const Bills = () => {
           <h2 className="font-heading font-[800] text-[1.6rem] text-white uppercase tracking-wider">Terminal Archives</h2>
           <p className="font-body italic font-[400] text-[0.75rem] text-text-muted mt-1 uppercase">Authorized invoice logs and financial history</p>
         </div>
+        {isSuperAdmin && (
+          <button
+            onClick={() => setIsResetModalOpen(true)}
+            className="px-6 py-3.5 rounded-xl bg-red-500/[0.08] hover:bg-red-500 hover:text-white hover:shadow-lg hover:shadow-red-500/20 text-red-500 font-heading font-black text-[0.72rem] uppercase tracking-wider transition-all border border-red-500/20 active:scale-95 cursor-pointer"
+          >
+            Reset Archives
+          </button>
+        )}
       </div>
 
       <div className="p-8 rounded-[24px] bg-secondary/80 backdrop-blur-md border border-border/50 search-block">
@@ -393,6 +422,46 @@ const Bills = () => {
           <div className="flex gap-4 pt-2">
             <button onClick={() => setIsDeleting(null)} className="flex-1 py-4 rounded-xl bg-transparent border border-border/50 text-[0.75rem] font-heading font-black uppercase tracking-widest text-text-muted hover:text-white hover:bg-white/5 transition-all">Cancel</button>
             <button onClick={handleDeleteConfirm} className="flex-1 py-4 rounded-xl bg-accent-red text-[0.75rem] font-heading font-black uppercase tracking-widest text-white shadow-glow-red hover:bg-accent-red/80 transition-all">Void Bill</button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal 
+        isOpen={isResetModalOpen} 
+        onClose={() => !isResetting && setIsResetModalOpen(false)} 
+        title="WIPE TERMINAL ARCHIVES?" 
+        preventClose={true}
+      >
+        <div className="space-y-6 pt-4">
+          <div className="flex gap-4 items-start p-5 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400">
+            <AlertTriangle className="shrink-0" size={24} />
+            <div className="space-y-1">
+              <h5 className="font-heading font-black text-[0.85rem] uppercase tracking-wide text-white">CRITICAL WARNING</h5>
+              <p className="text-[0.72rem] font-body text-red-200/70 leading-relaxed">
+                This operation will permanently delete ALL invoice logs, payment history, and credit records from the system. This action is irreversible.
+              </p>
+            </div>
+          </div>
+          
+          <p className="text-[0.8rem] font-body text-white/50">
+            Are you absolutely sure you want to perform a database-level wipe of the archives?
+          </p>
+
+          <div className="flex gap-4">
+            <button 
+              disabled={isResetting}
+              onClick={() => setIsResetModalOpen(false)} 
+              className="flex-1 py-4 rounded-xl bg-transparent border border-border/50 font-body font-[700] text-[0.75rem] uppercase tracking-[0.14em] text-white/70 hover:text-white hover:border-white/30 transition-all cursor-pointer"
+            >
+              No, Cancel
+            </button>
+            <button 
+              disabled={isResetting}
+              onClick={handleResetArchives} 
+              className="flex-1 py-4 rounded-xl bg-[#FF3D57] font-body font-[700] text-[0.75rem] uppercase tracking-[0.14em] text-white shadow-[0_0_20px_rgba(255,61,87,0.3)] hover:bg-red-600 transition-all flex items-center justify-center gap-2 cursor-pointer"
+            >
+              {isResetting ? 'Wiping...' : 'Yes, Wipe Archives'}
+            </button>
           </div>
         </div>
       </Modal>

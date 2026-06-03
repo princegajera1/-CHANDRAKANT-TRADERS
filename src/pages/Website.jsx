@@ -248,7 +248,7 @@ const Website = () => {
                 key={i} 
                 className={`flex flex-col justify-between min-h-[420px] p-8 rounded-2xl bg-[#141B2D] border ${
                   s.featured ? 'border-[#FF6B00] shadow-[0_0_25px_rgba(255,107,0,0.15)]' : 'border-white/5'
-                } hover:border-[#FF6B00]/30 hover:-translate-y-2 transition-all duration-300 relative overflow-hidden group`}
+                } hover:border-[#FF6B00]/40 hover:-translate-y-2 hover:shadow-[0_0_30px_rgba(255,107,0,0.2)] transition-all duration-300 relative overflow-hidden group select-none cursor-default focus:outline-none`}
               >
                 <div className="absolute top-0 right-0 w-24 h-24 bg-[#FF6B00] opacity-0 group-hover:opacity-[0.02] rounded-full blur-2xl transition-opacity duration-300"></div>
                 <div className="space-y-8">
@@ -265,7 +265,7 @@ const Website = () => {
                 </div>
                 <button 
                   onClick={() => document.getElementById('contact')?.scrollIntoView({behavior: 'smooth'})}
-                  className="inline-flex items-center gap-2 text-[#FF6B00] text-[0.68rem] font-bold uppercase tracking-[0.2em] pt-8 hover:gap-4 transition-all"
+                  className="inline-flex items-center gap-2 text-[#FF6B00] text-[0.68rem] font-bold uppercase tracking-[0.2em] pt-8 hover:gap-4 transition-all focus:outline-none"
                 >
                   VIEW SERVICE <ArrowRight size={14} />
                 </button>

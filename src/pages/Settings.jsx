@@ -3,7 +3,7 @@ import { db, auth } from '../firebase/config';
 import { toast } from 'react-hot-toast';
 import { doc, getDoc, updateDoc, collection, onSnapshot, query, orderBy, limit, where, addDoc, serverTimestamp, deleteDoc, getDocs } from 'firebase/firestore';
 import { updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
-import { Store, Globe, Bell, Shield, Database, Save, Trash2, Link as LinkIcon, Eye, EyeOff, Users, History, UserPlus, Lock, Download, Search, CheckCircle, XCircle, UserCheck } from 'lucide-react';
+import { Store, Globe, Bell, Shield, Database, Save, Trash2, Link as LinkIcon, Eye, EyeOff, Users, History, UserPlus, Lock, Download, Search, CheckCircle, XCircle, UserCheck, MessageSquare } from 'lucide-react';
 import { format } from 'date-fns';
 import { useAuthContext } from '../context/AuthContext';
 import { logActivity } from '../utils/activity';
@@ -64,6 +64,38 @@ const Settings = () => {
   const [showPasswords, setShowPasswords] = useState({ current: false, new: false, confirm: false });
   const [confirmClear, setConfirmClear] = useState('');
   const [manualBillNum, setManualBillNum] = useState('');
+  
+  // WhatsApp Automation states
+  const [waQueue, setWaQueue] = useState([]);
+  const [loadingWa, setLoadingWa] = useState(false);
+
+  const handleRetryWhatsApp = async (docId) => {
+    if (isReadOnly) return toast.error('Access Denied: Read-Only Mode');
+    try {
+      await updateDoc(doc(db, 'whatsappQueue', docId), {
+        status: 'pending',
+        attempts: 0
+      });
+      toast.success('Message queued for retry');
+    } catch (err) {
+      toast.error('Failed to retry message');
+    }
+  };
+
+  const handleToggleAutoSend = async () => {
+    if (isReadOnly) return toast.error('Access Denied: Read-Only Mode');
+    const newVal = settings.whatsappAutoSend === false ? true : false;
+    try {
+      const settingsRef = doc(db, 'settings', 'shop');
+      await updateDoc(settingsRef, { whatsappAutoSend: newVal });
+      setSettings(prev => ({ ...prev, whatsappAutoSend: newVal }));
+      const newSettingsLocal = { ...settings, whatsappAutoSend: newVal };
+      localStorage.setItem('shopSettings', JSON.stringify(newSettingsLocal));
+      toast.success(`Auto WhatsApp invoicing turned ${newVal ? 'ON' : 'OFF'}`);
+    } catch (err) {
+      toast.error('Failed to update toggle setting');
+    }
+  };
 
   const { products } = useProducts();
   const { customers } = useCustomers();
@@ -104,6 +136,17 @@ const Settings = () => {
     });
     return unsubscribe;
   }, [isSuperAdmin]);
+
+  useEffect(() => {
+    if (activeTab !== 'whatsapp') return;
+    setLoadingWa(true);
+    const q = query(collection(db, 'whatsappQueue'), orderBy('createdAt', 'desc'), limit(50));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setWaQueue(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      setLoadingWa(false);
+    });
+    return unsubscribe;
+  }, [activeTab]);
 
   const handleStateChange = (e) => {
     const stateName = e.target.value;
@@ -281,6 +324,27 @@ const Settings = () => {
     }
   };
 
+  const handleValidateManualBillNum = async () => {
+    const numVal = parseInt(manualBillNum);
+    if (isNaN(numVal) || numVal < 1) {
+      toast.error('Specify a valid positive sequence number to validate');
+      return;
+    }
+    const formattedBillNo = String(numVal).padStart(4, '0');
+    try {
+      const q = query(collection(db, 'bills'), where('billNo', '==', formattedBillNo));
+      const querySnapshot = await getDocs(q);
+      if (!querySnapshot.empty) {
+        toast.error(`Invalid: Invoice Number ${formattedBillNo} is already in use!`);
+      } else {
+        toast.success(`Valid: Invoice Number ${formattedBillNo} is available for use.`);
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error('Verification failed during database check');
+    }
+  };
+
   const handleWipeProducts = async () => {
     if (isReadOnly) {
       toast.error('Read-only access — authorization required');
@@ -379,6 +443,7 @@ const Settings = () => {
           {[
             { id: 'shop', icon: Store, label: 'Shop Configuration' },
             { id: 'digital', icon: Globe, label: 'Digital Matrix' },
+            { id: 'whatsapp', icon: MessageSquare, label: 'WhatsApp Automation' },
             { id: 'alerts', icon: Bell, label: 'Alert Protocols' },
             { id: 'security', icon: Shield, label: 'Security Grid' },
             { id: 'admins', icon: Users, label: 'Admin Network' },
@@ -591,7 +656,21 @@ const Settings = () => {
                     <p className="font-body font-[400] text-[0.7rem] text-white/40 leading-relaxed">
                       Set the next invoice sequence number manually. Submitting a new invoice will start from this number.
                     </p>
-                    <div className="flex gap-4 items-center">
+                    
+                    <div className="flex flex-wrap gap-2 pt-1">
+                      {['0001', '0010', '0050', '0100', '1000'].map(val => (
+                        <button
+                          key={val}
+                          type="button"
+                          onClick={() => setManualBillNum(parseInt(val).toString())}
+                          className="px-3 py-1.5 text-[0.65rem] font-bold bg-white/5 border border-white/10 rounded-lg text-white/70 hover:bg-[#FF6B00]/10 hover:text-[#FF6B00] hover:border-[#FF6B00]/25 transition-all cursor-pointer uppercase tracking-wider"
+                        >
+                          {val}
+                        </button>
+                      ))}
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center pt-2">
                       <input
                         type="number"
                         placeholder="Next sequence (e.g. 42)"
@@ -599,18 +678,136 @@ const Settings = () => {
                         value={manualBillNum}
                         onChange={e => setManualBillNum(e.target.value)}
                       />
-                      <button
-                        type="button"
-                        onClick={handleSaveManualBillNum}
-                        className="h-[42px] px-6 rounded-xl bg-[#FF6A00] text-white font-body font-[700] text-[0.7rem] uppercase tracking-[0.1em] shadow-lg transition-all admin-btn-hover"
-                      >
-                        Save Sequence
-                      </button>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={handleValidateManualBillNum}
+                          className="h-[42px] px-5 rounded-xl border border-white/10 text-white font-body font-[700] text-[0.7rem] uppercase tracking-[0.1em] transition-all hover:bg-white/5 hover:border-white/20 active:scale-95 cursor-pointer"
+                        >
+                          Validate
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleSaveManualBillNum}
+                          className="h-[42px] px-5 rounded-xl bg-[#FF6A00] text-white font-body font-[700] text-[0.7rem] uppercase tracking-[0.1em] shadow-lg transition-all hover:brightness-110 active:scale-95 cursor-pointer"
+                        >
+                          Save Sequence
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
 
+            </div>
+          )}
+
+          {activeTab === 'whatsapp' && (
+            <div className="p-10 rounded-[32px] bg-[#0D1220] border border-white/[0.05] space-y-10 animate-page-entrance">
+              <div className="flex items-center justify-between border-b border-white/5 pb-6">
+                <div className="flex items-center gap-3">
+                  <MessageSquare size={20} className="text-[#FF6B00]" />
+                  <h3 className="font-body font-[700] text-[0.72rem] text-white/[0.50] uppercase tracking-[0.18em]">WhatsApp Invoicing Automation</h3>
+                </div>
+                {/* Auto Send Toggle */}
+                <div className="flex items-center gap-3">
+                  <span className="text-[0.65rem] font-bold uppercase tracking-wider text-white/40">Auto-Queue Invoices:</span>
+                  <button 
+                    onClick={handleToggleAutoSend}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors cursor-pointer focus:outline-none ${
+                      settings.whatsappAutoSend !== false ? 'bg-[#FF6B00]' : 'bg-white/10'
+                    }`}
+                  >
+                    <span 
+                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                        settings.whatsappAutoSend !== false ? 'translate-x-6' : 'translate-x-1'
+                      }`} 
+                    />
+                  </button>
+                </div>
+              </div>
+
+              {/* Live Status and Stats */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="p-5 rounded-2xl bg-white/[0.02] border border-white/5 flex flex-col justify-between">
+                  <p className="text-[0.6rem] font-bold text-white/30 uppercase tracking-widest">Pending in Queue</p>
+                  <p className="text-2xl font-heading font-black text-white mt-2">
+                    {waQueue.filter(m => m.status === 'pending').length}
+                  </p>
+                </div>
+                <div className="p-5 rounded-2xl bg-white/[0.02] border border-white/5 flex flex-col justify-between">
+                  <p className="text-[0.6rem] font-bold text-white/30 uppercase tracking-widest">Delivered Logs</p>
+                  <p className="text-2xl font-heading font-black text-emerald-400 mt-2">
+                    {waQueue.filter(m => m.status === 'success').length}
+                  </p>
+                </div>
+                <div className="p-5 rounded-2xl bg-white/[0.02] border border-white/5 flex flex-col justify-between">
+                  <p className="text-[0.6rem] font-bold text-white/30 uppercase tracking-widest">Failed Attempts</p>
+                  <p className="text-2xl font-heading font-black text-rose-500 mt-2">
+                    {waQueue.filter(m => m.status === 'failed').length}
+                  </p>
+                </div>
+              </div>
+
+              {/* Queue Table */}
+              <div className="space-y-4 pt-4">
+                <h4 className="text-[0.7rem] font-heading font-black text-white/40 uppercase tracking-widest">Real-time Automation Queue</h4>
+                
+                <div className="border border-white/10 rounded-2xl overflow-hidden bg-primary/20">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="bg-white/5">
+                        <th className="px-6 py-4 text-[0.65rem] font-black uppercase text-white/30 tracking-widest">Bill #</th>
+                        <th className="px-6 py-4 text-[0.65rem] font-black uppercase text-white/30 tracking-widest">Customer</th>
+                        <th className="px-6 py-4 text-[0.65rem] font-black uppercase text-white/30 tracking-widest">Queue Status</th>
+                        <th className="px-6 py-4 text-[0.65rem] font-black uppercase text-white/30 tracking-widest">Attempts</th>
+                        <th className="px-6 py-4 text-[0.65rem] font-black uppercase text-white/30 tracking-widest text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/5">
+                      {loadingWa ? (
+                        <tr>
+                          <td colSpan="5" className="px-6 py-10 text-center text-white/30 font-bold uppercase tracking-wider">Syncing queue...</td>
+                        </tr>
+                      ) : waQueue.length === 0 ? (
+                        <tr>
+                          <td colSpan="5" className="px-6 py-10 text-center text-white/20 font-bold uppercase tracking-wider">No queued automation logs available</td>
+                        </tr>
+                      ) : (
+                        waQueue.map(item => (
+                          <tr key={item.id} className="hover:bg-white/[0.01] transition-colors">
+                            <td className="px-6 py-4 font-mono font-bold text-accent text-[0.8rem]">#{item.billNo}</td>
+                            <td className="px-6 py-4">
+                              <p className="text-[0.8rem] font-bold text-white uppercase">{item.customerName}</p>
+                              <p className="text-[0.65rem] text-white/30">{item.customerPhone}</p>
+                            </td>
+                            <td className="px-6 py-4">
+                              <span className={`px-2.5 py-1 rounded-lg text-[0.6rem] font-black uppercase tracking-wider border ${
+                                item.status === 'success' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
+                                item.status === 'failed' ? 'bg-rose-500/10 text-rose-500 border-rose-500/20' :
+                                'bg-amber-500/10 text-amber-400 border-amber-500/20 animate-pulse'
+                              }`}>
+                                {item.status}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 font-mono text-[0.8rem] text-white/40">{item.attempts || 1}</td>
+                            <td className="px-6 py-4 text-right">
+                              {item.status === 'failed' && (
+                                <button 
+                                  onClick={() => handleRetryWhatsApp(item.id)}
+                                  className="px-3 py-1.5 bg-[#FF6B00] hover:brightness-110 text-white text-[0.62rem] font-black uppercase tracking-widest rounded-lg transition-all active:scale-95 cursor-pointer"
+                                >
+                                  Retry
+                                </button>
+                              )}
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             </div>
           )}
 

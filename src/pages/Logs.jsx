@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { collection, query, orderBy, limit, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase/config';
-import { History, Shield, User, Globe, Monitor, Search } from 'lucide-react';
+import { History, Shield, User, Globe, Monitor, Search, Clock } from 'lucide-react';
 import { format } from 'date-fns';
 
 const Logs = () => {
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [filterInterval, setFilterInterval] = useState('all');
 
   useEffect(() => {
     const q = query(
@@ -28,11 +29,46 @@ const Logs = () => {
     return () => unsubscribe();
   }, []);
 
-  const filteredLogs = logs.filter(log => 
-    log.userEmail?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    log.action?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    log.userName?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredLogs = logs.filter(log => {
+    // 1. Search filter
+    const searchLower = searchTerm.toLowerCase();
+    const matchesSearch = 
+      log.userEmail?.toLowerCase().includes(searchLower) ||
+      log.action?.toLowerCase().includes(searchLower) ||
+      log.userName?.toLowerCase().includes(searchLower) ||
+      log.os?.toLowerCase().includes(searchLower) ||
+      log.browser?.toLowerCase().includes(searchLower);
+
+    if (!matchesSearch) return false;
+
+    // 2. Interval filter
+    if (filterInterval === 'all') return true;
+    if (!log.timestamp) return true; // Keep live records
+
+    const logDate = log.timestamp.toDate ? log.timestamp.toDate() : new Date(log.timestamp);
+    const now = new Date();
+
+    if (filterInterval === 'today') {
+      return logDate.toDateString() === now.toDateString();
+    }
+    if (filterInterval === 'week') {
+      const oneWeekAgo = new Date();
+      oneWeekAgo.setDate(now.getDate() - 7);
+      return logDate >= oneWeekAgo;
+    }
+    if (filterInterval === 'month') {
+      const oneMonthAgo = new Date();
+      oneMonthAgo.setMonth(now.getMonth() - 1);
+      return logDate >= oneMonthAgo;
+    }
+    if (filterInterval === 'year') {
+      const oneYearAgo = new Date();
+      oneYearAgo.setFullYear(now.getFullYear() - 1);
+      return logDate >= oneYearAgo;
+    }
+
+    return true;
+  });
 
   return (
     <div className="space-y-8 animate-page-entrance">
@@ -55,6 +91,24 @@ const Logs = () => {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
+      </div>
+
+      {/* FILTER INTERVAL BAR */}
+      <div className="flex flex-wrap gap-2.5 items-center bg-[#0D121F] border border-white/10 p-3 rounded-2xl">
+        <span className="text-[0.65rem] font-black uppercase tracking-widest text-white/30 px-3">Interval:</span>
+        {['all', 'today', 'week', 'month', 'year'].map((interval) => (
+          <button
+            key={interval}
+            onClick={() => setFilterInterval(interval)}
+            className={`px-4 py-2 rounded-xl text-[0.65rem] font-black uppercase tracking-[0.15em] transition-all cursor-pointer ${
+              filterInterval === interval 
+                ? 'bg-[#FF6A00] text-white shadow-lg shadow-[#FF6A00]/25' 
+                : 'bg-white/5 text-white/60 hover:bg-white/10 hover:text-white'
+            }`}
+          >
+            {interval}
+          </button>
+        ))}
       </div>
 
       {/* LOGS TABLE */}
@@ -116,7 +170,7 @@ const Logs = () => {
                       </div>
                     </td>
                     <td className="px-8 py-6">
-                      <div className="flex items-center gap-4 text-white/40">
+                      <div className="flex items-center gap-4 text-white/40 flex-wrap">
                         <div className="flex items-center gap-1.5">
                           <Monitor size={14} />
                           <span className="text-[0.7rem] font-bold">{log.browser || 'Browser'}</span>
@@ -125,6 +179,12 @@ const Logs = () => {
                           <Globe size={14} />
                           <span className="text-[0.7rem] font-bold">{log.os || 'OS'}</span>
                         </div>
+                        {log.sessionDuration && (
+                          <div className="flex items-center gap-1.5 text-[#FF6A00] font-bold">
+                            <Clock size={12} />
+                            <span>{log.sessionDuration}</span>
+                          </div>
+                        )}
                       </div>
                     </td>
                     <td className="px-8 py-6 text-right">

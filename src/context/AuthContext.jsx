@@ -1,7 +1,7 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { auth, db } from '../firebase/config';
-import { doc, onSnapshot } from 'firebase/firestore';
+import { doc, onSnapshot, collection, query, where, setDoc } from 'firebase/firestore';
 import { logActivity } from '../utils/activity';
 
 const AuthContext = createContext();
@@ -32,10 +32,10 @@ export const AuthProvider = ({ children }) => {
           });
           setLoading(false);
         } else {
-          // Real-time security listener: Instantly kicks user out if SuperAdmin deletes them
+          // Real-time security listener: Instantly kicks user out if SuperAdmin deletes or disables them
           profileUnsubscribe = onSnapshot(doc(db, 'users', currentUser.uid), async (docSnap) => {
-            if (!docSnap.exists()) {
-              // Profile has been purged! Terminate session and kick to home page instantly.
+            if (!docSnap.exists() || docSnap.data().status === 'disabled' || docSnap.data().disabled === true) {
+              // Profile has been purged or disabled! Terminate session and kick to home page instantly.
               await signOut(auth);
               setUser(null);
               setProfile(null);
@@ -72,7 +72,7 @@ export const AuthProvider = ({ children }) => {
   const logout = async () => {
     if (user) {
       const displayName = profile?.name || user.displayName || user.email.split('@')[0];
-      await logActivity({ ...user, displayName }, 'LOGOUT');
+      await logActivity({ ...user, displayName, role: profile?.role }, 'LOGOUT');
     }
     localStorage.removeItem('demo_visitor_name');
     localStorage.removeItem('is_demo_session');
@@ -101,15 +101,60 @@ export const AuthProvider = ({ children }) => {
     }
   }, [isGuest, profile]);
 
+  // Live WhatsApp Queue Background Processor (Mock Engine)
+  useEffect(() => {
+    if (!user) return;
+
+    const q = query(
+      collection(db, 'whatsappQueue'),
+      where('status', '==', 'pending')
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      snapshot.docs.forEach((docSnap) => {
+        const docId = docSnap.id;
+        const data = docSnap.data();
+
+        if (window[`processing_wa_${docId}`]) return;
+        window[`processing_wa_${docId}`] = true;
+
+        setTimeout(async () => {
+          try {
+            // 90% chance of success, 10% chance of failure to demonstrate retry queues
+            const isSuccess = Math.random() > 0.1;
+            const newStatus = isSuccess ? 'success' : 'failed';
+
+            await setDoc(doc(db, 'whatsappQueue', docId), {
+              status: newStatus,
+              processedAt: new Date(),
+              attempts: (data.attempts || 0) + 1
+            }, { merge: true });
+
+            console.log(`WhatsApp message for Bill #${data.billNo} processed: ${newStatus}`);
+          } catch (err) {
+            console.error("Failed to process WhatsApp queue document:", err);
+          } finally {
+            delete window[`processing_wa_${docId}`];
+          }
+        }, 3000);
+      });
+    });
+
+    return () => unsubscribe();
+  }, [user]);
+
   const value = {
     user,
     profile,
     loading,
+    role: profile?.role || (isDemo ? 'demo' : ''),
     isOwner: profile?.role === 'owner',
     isSuperAdmin,
-    isDemo,
-    isGuest,
-    isReadOnly: isDemo || isGuest,
+    isAdmin: profile?.role === 'admin' || isSuperAdmin,
+    isManager: profile?.role === 'manager' || profile?.role === 'admin' || isSuperAdmin,
+    isStaff: profile?.role === 'staff' || profile?.role === 'manager' || profile?.role === 'admin' || isSuperAdmin,
+    isViewer: profile?.role === 'viewer' || isDemo || isGuest,
+    isReadOnly: isDemo || isGuest || profile?.role === 'viewer',
     logout
   };
 

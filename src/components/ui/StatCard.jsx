@@ -33,14 +33,16 @@ export const StatCard = ({ title, value, icon: Icon, color = 'cyan', subValue, o
   const cardRef = useRef(null);
   
   const colors = {
-    cyan: 'bg-[#00D4FF]/10 text-[#00D4FF]',
+    cyan: 'bg-[#ff6b00]/10 text-[#ff6b00]',
+    orange: 'bg-[#ff6b00]/10 text-[#ff6b00]',
     gold: 'bg-[#FFB800]/10 text-[#FFB800]',
     green: 'bg-[#00E676]/10 text-[#00E676]',
     red: 'bg-[#FF3D57]/10 text-[#FF3D57]',
   };
 
   const borders = {
-    cyan: 'hover:border-[#00D4FF]/40',
+    cyan: 'hover:border-[#ff6b00]/40',
+    orange: 'hover:border-[#ff6b00]/40',
     gold: 'hover:border-[#FFB800]/40',
     green: 'hover:border-[#00E676]/40',
     red: 'hover:border-[#FF3D57]/40',
@@ -128,10 +130,12 @@ export const Badge = ({ children, variant = 'gray', className = '' }) => {
   const variants = {
     gray: 'bg-white/[0.04] text-[#8899A6] border-white/5',
     green: 'bg-[#00E676]/10 text-[#00E676] border-[#00E676]/20 shadow-[0_0_10px_rgba(0,230,118,0.05)]',
-    blue: 'bg-[#00D4FF]/10 text-[#00D4FF] border-[#00D4FF]/20 shadow-[0_0_10px_rgba(0,212,255,0.05)]',
+    blue: 'bg-[#ff6b00]/10 text-[#ff6b00] border-[#ff6b00]/20 shadow-[0_0_10px_rgba(255,107,0,0.05)]',
+    orange: 'bg-[#ff6b00]/10 text-[#ff6b00] border-[#ff6b00]/20 shadow-[0_0_10px_rgba(255,107,0,0.05)]',
     gold: 'bg-[#FFB800]/10 text-[#FFB800] border-[#FFB800]/20 shadow-[0_0_10px_rgba(255,184,0,0.05)]',
     red: 'bg-[#FF3D57]/10 text-[#FF3D57] border-[#FF3D57]/20 shadow-[0_0_10px_rgba(255,61,87,0.05)]',
-    solidCyan: 'bg-[#00D4FF] text-[#0A0F1E] border-[#00D4FF] font-black',
+    solidCyan: 'bg-[#ff6b00] text-[#0A0F1E] border-[#ff6b00] font-black',
+    solidOrange: 'bg-[#ff6b00] text-[#0A0F1E] border-[#ff6b00] font-black',
   };
 
   return (

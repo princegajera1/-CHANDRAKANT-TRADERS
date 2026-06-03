@@ -5,7 +5,7 @@ import { useAuthContext } from '../context/AuthContext';
 import { Search, Plus, Eye, Edit2, Trash2, Package, X, AlertTriangle, Lock } from 'lucide-react';
 import { Modal } from '../components/ui/Modal';
 import { AnimatedNumber } from '../components/ui/AnimatedNumber';
-import { addProduct, updateProduct } from '../firebase/products';
+import { addProduct, updateProduct, auditProductDeletion } from '../firebase/products';
 import { moveToTrash } from '../firebase/trash';
 import { toast } from 'react-hot-toast';
 import gsap from 'gsap';
@@ -14,7 +14,7 @@ const Inventory = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { products, loading } = useProducts();
-  const { isReadOnly } = useAuthContext();
+  const { isReadOnly, user, profile } = useAuthContext();
   
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('All');
@@ -23,6 +23,7 @@ const Inventory = () => {
   const [editingProduct, setEditingProduct] = useState(null);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [isDeleting, setIsDeleting] = useState(null);
+  const [deleteReason, setDeleteReason] = useState('');
   const [statModal, setStatModal] = useState(null);
   const [formData, setFormData] = useState({
     name: '', brand: 'MRF', size: '', category: 'Tyre',
@@ -163,10 +164,19 @@ const Inventory = () => {
 
   const handleDeleteConfirm = async () => {
     if (isDeleting) {
+      if (!deleteReason.trim()) {
+        toast.error('Deletion reason is required');
+        return;
+      }
       try {
+        const productToDelete = products.find(p => p.id === isDeleting);
+        if (productToDelete) {
+          await auditProductDeletion(productToDelete, deleteReason, user, profile);
+        }
         await moveToTrash('products', isDeleting);
         toast.success('Asset moved to Recycle Bin');
         setIsDeleting(null);
+        setDeleteReason('');
       } catch (error) {
         toast.error('Failed to purge asset');
       }
@@ -360,12 +370,32 @@ const Inventory = () => {
       </Modal>
 
       {/* Delete Modal */}
-      <Modal isOpen={!!isDeleting} onClose={() => setIsDeleting(null)} title="Move to Recycle Bin?">
-        <div className="p-4 text-center space-y-6">
-          <p className="text-white/60 text-[0.9rem] font-medium leading-relaxed">This item will be moved to the recycle bin. You can restore it later.</p>
+      <Modal isOpen={!!isDeleting} onClose={() => { setIsDeleting(null); setDeleteReason(''); }} title="Move to Recycle Bin?">
+        <div className="p-4 space-y-6 text-left">
+          <p className="text-white/60 text-[0.9rem] font-medium leading-relaxed text-center">This item will be moved to the recycle bin. You can restore it later.</p>
+          
+          <div className="space-y-2">
+            <label className="text-[0.65rem] font-black uppercase tracking-widest text-[#8899A6] ml-1">Reason for Deletion *</label>
+            <textarea
+              required
+              rows={3}
+              placeholder="Please provide a detailed reason for deleting this product..."
+              value={deleteReason}
+              onChange={(e) => setDeleteReason(e.target.value)}
+              className="w-full px-5 py-3 rounded-xl bg-primary border border-border text-white text-[0.85rem] outline-none focus:border-[#FF3D57] focus:shadow-glow-red transition-all resize-none"
+            />
+          </div>
+
           <div className="flex gap-4 pt-2">
-            <button onClick={() => setIsDeleting(null)} className="flex-1 py-4 rounded-xl bg-transparent border border-white/20 text-[0.75rem] font-black uppercase tracking-widest text-white hover:bg-white/5 transition-all">Cancel</button>
-            <button onClick={handleDeleteConfirm} className="flex-1 py-4 rounded-xl bg-[#FF3D57] text-[0.75rem] font-black uppercase tracking-widest text-white shadow-glow-red hover:bg-[#FF3D57]/80 transition-all">Confirm</button>
+            <button type="button" onClick={() => { setIsDeleting(null); setDeleteReason(''); }} className="flex-1 py-4 rounded-xl bg-transparent border border-white/20 text-[0.75rem] font-black uppercase tracking-widest text-white hover:bg-white/5 transition-all text-center">Cancel</button>
+            <button 
+              type="button"
+              disabled={!deleteReason.trim()} 
+              onClick={handleDeleteConfirm} 
+              className="flex-1 py-4 rounded-xl bg-[#FF3D57] text-[0.75rem] font-black uppercase tracking-widest text-white shadow-glow-red hover:bg-[#FF3D57]/80 transition-all disabled:opacity-40 disabled:cursor-not-allowed text-center"
+            >
+              Confirm Deletion
+            </button>
           </div>
         </div>
       </Modal>
