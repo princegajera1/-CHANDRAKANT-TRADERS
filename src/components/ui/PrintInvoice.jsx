@@ -79,7 +79,7 @@ export const PrintInvoice = ({ bill, shopSettings, safeFormatDate, amountToWords
         <div id="bill-print-area">
           
           {/* Main Wrapper with 1px solid black border */}
-          <div className="border border-black relative flex flex-col min-h-[275mm]" style={{ marginTop: '10px' }}>
+          <div className="border border-black relative flex flex-col min-h-[265mm]" style={{ marginTop: '10px' }}>
             
             {/* TAX INVOICE Badge */}
             <div className="absolute w-full flex justify-center left-0" style={{ top: '-14px' }}>

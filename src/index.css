@@ -602,7 +602,7 @@ p { max-width: 60ch; }
 @media print {
   @page {
     size: A4 portrait;
-    margin: 15mm;
+    margin: 6mm;
   }
 
   body {
