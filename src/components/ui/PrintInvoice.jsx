@@ -68,10 +68,6 @@ export const PrintInvoice = ({ bill, shopSettings, safeFormatDate, amountToWords
             color: black !important;
             box-sizing: border-box !important;
           }
-          /* Ensure proper top margin to prevent TAX INVOICE badge clipping */
-          #bill-print-area > div {
-            margin-top: 10px !important;
-          }
         }
       `}</style>
 
@@ -79,7 +75,7 @@ export const PrintInvoice = ({ bill, shopSettings, safeFormatDate, amountToWords
         <div id="bill-print-area">
           
           {/* Main Wrapper with 1px solid black border */}
-          <div className="border border-black relative flex flex-col min-h-[265mm]" style={{ marginTop: '10px' }}>
+          <div className="border border-black relative flex flex-col min-h-[265mm]" style={{ marginTop: '14px' }}>
             
             {/* TAX INVOICE Badge */}
             <div className="absolute w-full flex justify-center left-0" style={{ top: '-14px' }}>
