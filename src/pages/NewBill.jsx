@@ -404,31 +404,33 @@ const NewBill = () => {
 
   if (savedBill) {
     return (
-      <div ref={pageRef} className="max-w-2xl mx-auto py-20 no-print">
-        <div className="bg-secondary/80 backdrop-blur-md p-12 rounded-[40px] border border-border/50 text-center space-y-8 no-print shadow-glow">
-          <div className="w-24 h-24 bg-accent-green/10 text-accent-green rounded-3xl mx-auto flex items-center justify-center border border-accent-green/20 shadow-glow-green">
-            <CheckCircle size={48} />
-          </div>
-          <div>
-            <h2 className="font-heading font-[800] text-[1.8rem] text-white uppercase tracking-wider">Log Synchronized</h2>
-            <p className="font-mono text-white/40 mt-2 uppercase tracking-widest text-[0.8rem] font-black">Invoice Serial: <span className="text-accent font-bold">#{savedBill.billNo}</span></p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4">
-            <button onClick={handlePrint} className="h-16 rounded-2xl bg-white/5 border border-border/50 hover:bg-white/10 transition-all text-white font-heading font-black text-[0.7rem] uppercase tracking-widest flex items-center justify-center gap-3">
-              <Printer size={20} className="text-accent" /> Print Log
-            </button>
-            <button onClick={() => shareOnWhatsApp(savedBill, shopSettings)} className="h-16 rounded-2xl bg-white/5 border border-border/50 hover:bg-white/10 transition-all text-white font-heading font-black text-[0.7rem] uppercase tracking-widest flex items-center justify-center gap-3">
-              <Share2 size={20} className="text-accent-green" /> WhatsApp
-            </button>
-            <button onClick={handleReset} className="h-16 rounded-2xl bg-accent text-primary font-heading font-black text-[0.7rem] uppercase tracking-widest flex items-center justify-center gap-3 shadow-glow hover:bg-accent/85 transition-all">
-              <Plus size={20} /> New Protocol
-            </button>
+      <>
+        <div ref={pageRef} className="max-w-2xl mx-auto py-20 no-print">
+          <div className="bg-secondary/80 backdrop-blur-md p-12 rounded-[40px] border border-border/50 text-center space-y-8 shadow-glow">
+            <div className="w-24 h-24 bg-accent-green/10 text-accent-green rounded-3xl mx-auto flex items-center justify-center border border-accent-green/20 shadow-glow-green">
+              <CheckCircle size={48} />
+            </div>
+            <div>
+              <h2 className="font-heading font-[800] text-[1.8rem] text-white uppercase tracking-wider">Log Synchronized</h2>
+              <p className="font-mono text-white/40 mt-2 uppercase tracking-widest text-[0.8rem] font-black">Invoice Serial: <span className="text-accent font-bold">#{savedBill.billNo}</span></p>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4">
+              <button onClick={handlePrint} className="h-16 rounded-2xl bg-white/5 border border-border/50 hover:bg-white/10 transition-all text-white font-heading font-black text-[0.7rem] uppercase tracking-widest flex items-center justify-center gap-3">
+                <Printer size={20} className="text-accent" /> Print Log
+              </button>
+              <button onClick={() => shareOnWhatsApp(savedBill, shopSettings)} className="h-16 rounded-2xl bg-white/5 border border-border/50 hover:bg-white/10 transition-all text-white font-heading font-black text-[0.7rem] uppercase tracking-widest flex items-center justify-center gap-3">
+                <Share2 size={20} className="text-accent-green" /> WhatsApp
+              </button>
+              <button onClick={handleReset} className="h-16 rounded-2xl bg-accent text-primary font-heading font-black text-[0.7rem] uppercase tracking-widest flex items-center justify-center gap-3 shadow-glow hover:bg-accent/85 transition-all">
+                <Plus size={20} /> New Protocol
+              </button>
+            </div>
           </div>
         </div>
 
         <PrintInvoice bill={savedBill} shopSettings={shopSettings} safeFormatDate={safeFormatDate} amountToWords={amountToWords} />
-      </div>
+      </>
     );
   }
 
