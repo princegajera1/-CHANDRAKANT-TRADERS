@@ -46,6 +46,8 @@ const Dashboard = () => {
   const [stats, setStats] = useState({ 
     todaySales: 0, 
     todayBills: 0, 
+    thisMonthSales: 0,
+    thisMonthBills: 0,
     lowStock: 0, 
     pendingUdhaar: 0, 
     visitorCount: 0,
@@ -362,9 +364,9 @@ const Dashboard = () => {
               </div>
               <p className="font-body text-[0.75rem] text-[#8899A6] leading-relaxed">
                 {stats.pendingUdhaar > stats.thisMonthSales ? (
-                  <>Outstanding customer liabilities (<span className="text-[#FF3D57] font-bold">₹{stats.pendingUdhaar.toLocaleString()}</span>) exceed this month's revenue (₹{stats.thisMonthSales.toLocaleString()}). Limit new credit accounts.</>
+                  <>Outstanding customer liabilities (<span className="text-[#FF3D57] font-bold">₹{(stats.pendingUdhaar || 0).toLocaleString()}</span>) exceed this month's revenue (₹{(stats.thisMonthSales || 0).toLocaleString()}). Limit new credit accounts.</>
                 ) : (
-                  <>Outstanding customer liabilities (₹{stats.pendingUdhaar.toLocaleString()}) are well within safe thresholds compared to this month's revenue (₹{stats.thisMonthSales.toLocaleString()}). Status is secure.</>
+                  <>Outstanding customer liabilities (₹{(stats.pendingUdhaar || 0).toLocaleString()}) are well within safe thresholds compared to this month's revenue (₹{(stats.thisMonthSales || 0).toLocaleString()}). Status is secure.</>
                 )}
               </p>
             </div>
@@ -396,9 +398,9 @@ const Dashboard = () => {
               </div>
               <p className="font-body text-[0.75rem] text-[#8899A6] leading-relaxed">
                 {stats.thisMonthSales >= stats.lastMonthSales ? (
-                  <>Current month's revenue (<span className="text-[#00E676] font-bold">₹{stats.thisMonthSales.toLocaleString()}</span>) has outperformed last month's final total (₹{stats.lastMonthSales.toLocaleString()}). Growth trajectory is positive.</>
+                  <>Current month's revenue (<span className="text-[#00E676] font-bold">₹{(stats.thisMonthSales || 0).toLocaleString()}</span>) has outperformed last month's final total (₹{(stats.lastMonthSales || 0).toLocaleString()}). Growth trajectory is positive.</>
                 ) : (
-                  <>Current month's sales (₹{stats.thisMonthSales.toLocaleString()}) are below last month's final total of <span className="text-[#FF3D57] font-bold">₹{stats.lastMonthSales.toLocaleString()}</span>. Monitor sales closely.</>
+                  <>Current month's sales (₹{(stats.thisMonthSales || 0).toLocaleString()}) are below last month's final total of <span className="text-[#FF3D57] font-bold">₹{(stats.lastMonthSales || 0).toLocaleString()}</span>. Monitor sales closely.</>
                 )}
               </p>
             </div>
@@ -579,7 +581,7 @@ const Dashboard = () => {
                         </td>
                         <td className="p-[0.8rem_1rem] border-b border-[#1E2D3D] text-right">
                           <span className="font-mono font-[700] text-[0.95rem] text-accent whitespace-nowrap">
-                            ₹{bill.grandTotal.toLocaleString()}
+                            ₹{(bill.grandTotal || 0).toLocaleString()}
                           </span>
                         </td>
                         <td className="p-[0.8rem_1rem] border-b border-[#1E2D3D] text-center">
