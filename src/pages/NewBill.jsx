@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Search, Plus, Trash2, ShoppingCart, CheckCircle, Printer, Share2, Users, Wallet, Minus, ArrowRight, Edit2, ChevronDown, ChevronUp, Lock } from 'lucide-react';
 import { useProducts } from '../hooks/useProducts';
 import { useCustomers } from '../hooks/useCustomers';
-import { createBill } from '../firebase/bills';
+import { createBill, getNextBillNumber } from '../firebase/bills';
 import { addCustomer } from '../firebase/customers';
 import { useAuthContext } from '../context/AuthContext';
 import { toast } from 'react-hot-toast';
@@ -46,12 +46,26 @@ const NewBill = () => {
   const [ewayBillNo, setEwayBillNo] = useState('');
   const [ackDate, setAckDate] = useState('');
   const [ackNo, setAckNo] = useState('');
+  const [billNo, setBillNo] = useState('');
   
   const [isSaving, setIsSaving] = useState(false);
   const [savedBill, setSavedBill] = useState(null);
   const [shopSettings, setShopSettings] = useState(null);
 
   const pageRef = useRef(null);
+
+  // Fetch next bill number on mount to pre-fill the serial number
+  useEffect(() => {
+    const fetchNextBillNo = async () => {
+      try {
+        const nextNo = await getNextBillNumber();
+        setBillNo(nextNo);
+      } catch (err) {
+        console.error("Failed to load next bill number", err);
+      }
+    };
+    fetchNextBillNo();
+  }, []);
 
   useEffect(() => {
     // Read shopSettings from localStorage
@@ -202,7 +216,7 @@ const NewBill = () => {
     } else {
       setBillItems([...billItems, {
         productId: product.id,
-        productName: product.name,
+        productName: product.size ? `${product.name} ${product.size}`.trim() : product.name,
         brand: product.brand,
         size: product.size || '',
         hsnCode: product.hsnCode || '4011',
@@ -334,6 +348,7 @@ const NewBill = () => {
       }
 
       const billData = {
+        billNo: billNo ? billNo.trim() : undefined,
         customerId: finalCustomerId,
         customerName: finalCustomerName,
         customerPhone: finalCustomerPhone,
@@ -379,7 +394,7 @@ const NewBill = () => {
     }
   };
 
-  const handleReset = () => {
+  const handleReset = async () => {
     setBillItems([]);
     setSavedBill(null);
     setAmountPaid(0);
@@ -391,6 +406,12 @@ const NewBill = () => {
     setEwayBillNo('');
     setAckDate('');
     setAckNo('');
+    try {
+      const nextNo = await getNextBillNumber();
+      setBillNo(nextNo);
+    } catch (err) {
+      console.error("Failed to load next bill number", err);
+    }
   };
 
   const safeFormatDate = (timestamp) => {
@@ -556,6 +577,18 @@ const NewBill = () => {
         {/* RIGHT: Summary & Recipient */}
         <div className="w-full lg:w-[420px] space-y-8 animate-section">
           <div className="p-8 rounded-[32px] bg-secondary/80 backdrop-blur-md border border-border/50 space-y-8">
+            {/* Serial Number (Invoice No) Input Field */}
+            <div className="space-y-2 pb-4 border-b border-border/30">
+              <label className="text-[0.62rem] font-heading font-black uppercase tracking-[0.16em] text-text-muted">Serial No. (Invoice Number)</label>
+              <input
+                type="text"
+                placeholder="Enter Serial No..."
+                className="w-full px-5 h-[48px] rounded-xl outline-none font-body font-[700] text-[0.82rem] bg-primary/40 border border-border/50 text-white placeholder:text-text-muted/60 focus:border-accent focus:shadow-glow transition-all"
+                value={billNo}
+                onChange={(e) => setBillNo(e.target.value)}
+              />
+            </div>
+
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <Users size={20} className="text-accent" />

@@ -58,9 +58,18 @@ export const createBill = async (billData) => {
 
     // --- 2. LOGIC & WRITES ---
 
-    // Generate Sequential Bill Number (1, 2, 3...)
+    // Generate Sequential Bill Number or use manual input (1, 2, 3...)
     const newCounter = (settings.billCounter || 0) + 1;
-    const billNo = String(newCounter).padStart(4, '0');
+    const billNo = billData.billNo ? String(billData.billNo).trim() : String(newCounter).padStart(4, '0');
+
+    // Sync settings counter with custom bill number if it's numeric and higher
+    let updatedCounter = settings.billCounter || 0;
+    const parsedBillNo = parseInt(billNo, 10);
+    if (!isNaN(parsedBillNo) && parsedBillNo > updatedCounter) {
+      updatedCounter = parsedBillNo;
+    } else if (!billData.billNo) {
+      updatedCounter = newCounter;
+    }
 
     // Update stocks (with strict validation)
     productSnaps.forEach(({ ref, snap }, index) => {
@@ -82,15 +91,20 @@ export const createBill = async (billData) => {
 
     // Save the bill with the confirmed UNIQUE billNo
     const newBillRef = doc(billsCol);
+    
+    // Create copy of billData without billNo to avoid redundancy
+    const cleanedBillData = { ...billData };
+    delete cleanedBillData.billNo;
+
     transaction.set(newBillRef, {
-      ...billData,
+      ...cleanedBillData,
       billNo, // This is now guaranteed unique
       status: 'active',
       createdAt: serverTimestamp()
     });
 
     // Update settings counter
-    transaction.update(settingsRef, { billCounter: newCounter });
+    transaction.update(settingsRef, { billCounter: updatedCounter });
 
     return { id: newBillRef.id, billNo };
   });

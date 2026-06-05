@@ -1,7 +1,7 @@
 import React from 'react';
 import { formatIndianNumber } from '../../utils/amountToWords';
 
-export const PrintInvoice = ({ bill, shopSettings, safeFormatDate, amountToWords }) => {
+export const PrintInvoice = ({ bill, shopSettings, safeFormatDate, amountToWords, numberToWords }) => {
   if (!bill) return null;
 
   // Minimum 12 rows logic to fit on a single A4 page and fill the layout
@@ -27,7 +27,7 @@ export const PrintInvoice = ({ bill, shopSettings, safeFormatDate, amountToWords
   }
 
   // Support amount to words fallback if passed as numberToWords
-  const convertAmountToWords = amountToWords || ((val) => {
+  const convertAmountToWords = amountToWords || numberToWords || ((val) => {
     if (!val) return 'Zero Rupees Only';
     const a = ['', 'One ', 'Two ', 'Three ', 'Four ', 'Five ', 'Six ', 'Seven ', 'Eight ', 'Nine ', 'Ten ', 'Eleven ', 'Twelve ', 'Thirteen ', 'Fourteen ', 'Fifteen ', 'Sixteen ', 'Seventeen ', 'Eighteen ', 'Nineteen '];
     const b = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
@@ -164,7 +164,7 @@ export const PrintInvoice = ({ bill, shopSettings, safeFormatDate, amountToWords
                 <thead>
                   <tr className="bg-black text-white text-[11px] font-bold border-b border-black">
                     <th className="p-1 border-r border-black font-bold" style={{ width: '6%' }}>Sr.No</th>
-                    <th className="p-1 border-r border-black font-bold text-left" style={{ width: '48%' }}>Product Name</th>
+                    <th className="p-1 border-r border-black font-bold text-left" style={{ width: '48%' }}>Product Description</th>
                     <th className="p-1 border-r border-black font-bold" style={{ width: '10%' }}>HSN</th>
                     <th className="p-1 border-r border-black font-bold text-right" style={{ width: '8%' }}>Qty</th>
                     <th className="p-1 border-r border-black font-bold text-right" style={{ width: '12%' }}>Rate</th>
@@ -178,7 +178,7 @@ export const PrintInvoice = ({ bill, shopSettings, safeFormatDate, amountToWords
                         <td className="p-1 text-center border-r border-black">{index + 1}</td>
                         <td className="p-1 text-left border-r border-black uppercase font-bold">
                           <div>{item.productName}</div>
-                          {(item.size || item.tyreSize) && (
+                          {(item.size || item.tyreSize) && !item.productName.toUpperCase().includes((item.size || item.tyreSize).toUpperCase()) && (
                             <div className="text-[9px] text-gray-500 font-normal normal-case mt-0.5 leading-none">
                               Tyre Size: {item.size || item.tyreSize}
                             </div>
@@ -293,13 +293,11 @@ export const PrintInvoice = ({ bill, shopSettings, safeFormatDate, amountToWords
               </div>
             </div>
 
-            {/* SECTION G — PREMIUM BRAND FOOTER BAND */}
-            <div className="w-full border-t border-black bg-gray-50 p-2 text-center text-[9px] leading-tight mt-auto">
-              <p className="font-bold m-0 text-black uppercase tracking-wider">{shopSettings?.shopName || 'CHANDRAKANT TRADERS'} — Enterprise Billing Portal</p>
-              <p className="m-0 text-gray-600 mt-0.5">
-                GSTIN: {shopSettings?.gstNo || '-'} | Mob: {shopSettings?.mobile || '9924058659'} | State Code: {shopSettings?.stateCode || '24'} ({shopSettings?.state || 'Gujarat'})
+            {/* SECTION G — THANK YOU MESSAGE */}
+            <div className="w-full border-t border-black p-3 text-center mt-auto">
+              <p className="font-bold text-[11px] m-0 text-black">
+                Thank you for visiting Chandrakant Traders, {bill.customerName}!
               </p>
-              <p className="m-0 text-gray-500 italic">Thank you for choosing us for your premium tyre care, nitrogen filling and 3D laser alignment needs!</p>
             </div>
 
           </div>
