@@ -156,7 +156,7 @@ export const PrintInvoice = ({ bill, shopSettings, safeFormatDate, amountToWords
                     <tr>
                       <td>Serial No.</td>
                       <td className="font-bold" style={{ wordBreak: 'break-all' }}>
-                        : {bill.items && bill.items.length > 0 ? bill.items.map(i => i.serialNo).filter(Boolean).join(', ') || '-' : '-'}
+                        : {bill.serialNo || '-'}
                       </td>
                     </tr>
                   </tbody>

@@ -27,6 +27,20 @@ export const getNextBillNumber = async () => {
 
 export const getNextInvoiceNumber = getNextBillNumber;
 
+export const incrementInvoiceNumber = async () => {
+  const counterRef = doc(db, 'settings', 'invoiceCounter');
+  return await runTransaction(db, async (transaction) => {
+    const counterSnap = await transaction.get(counterRef);
+    let lastInvoiceNumber = 0;
+    if (counterSnap.exists()) {
+      lastInvoiceNumber = counterSnap.data().lastInvoiceNumber || 0;
+    }
+    const nextNumber = lastInvoiceNumber + 1;
+    transaction.set(counterRef, { lastInvoiceNumber: nextNumber }, { merge: true });
+    return String(nextNumber).padStart(4, '0');
+  });
+};
+
 export const resetInvoiceCounter = async () => {
   const counterRef = doc(db, 'settings', 'invoiceCounter');
   const { setDoc } = await import('firebase/firestore');

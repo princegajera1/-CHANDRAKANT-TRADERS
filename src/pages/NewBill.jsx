@@ -48,6 +48,7 @@ const NewBill = () => {
   const [ackDate, setAckDate] = useState('');
   const [ackNo, setAckNo] = useState('');
   const [billNo, setBillNo] = useState('');
+  const [serialNo, setSerialNo] = useState('');
   const [loadingCounter, setLoadingCounter] = useState(true);
   const [isResetCounterModalOpen, setIsResetCounterModalOpen] = useState(false);
   
@@ -158,6 +159,7 @@ const NewBill = () => {
       setDiscount(dup.discountAmount || 0);
       setPaymentMode(dup.paymentMode || 'Cash');
       setEwayBillNo(dup.ewayBillNo || '');
+      setSerialNo(dup.serialNo || '');
 
       // Reset location state so refreshing does not prefill again
       window.history.replaceState({}, document.title);
@@ -378,6 +380,7 @@ const NewBill = () => {
         ewayBillNo,
         ackDate,
         ackNo,
+        serialNo: serialNo.trim(),
         createdBy: user.uid,
         createdByName: profile?.name || 'Staff'
       };
@@ -410,6 +413,7 @@ const NewBill = () => {
     setEwayBillNo('');
     setAckDate('');
     setAckNo('');
+    setSerialNo('');
     setLoadingCounter(true);
     try {
       const nextNo = await getNextInvoiceNumber();
@@ -603,10 +607,10 @@ const NewBill = () => {
         {/* RIGHT: Summary & Recipient */}
         <div className="w-full lg:w-[420px] space-y-8 animate-section">
           <div className="p-8 rounded-[32px] bg-secondary/80 backdrop-blur-md border border-border/50 space-y-8">
-            {/* Serial Number (Invoice No) Input Field */}
-            <div className="space-y-2 pb-4 border-b border-border/30">
+            {/* Invoice Number Field */}
+            <div className="space-y-2 pb-4">
               <div className="flex justify-between items-center">
-                <label className="text-[0.62rem] font-heading font-black uppercase tracking-[0.16em] text-text-muted">Serial No. (Invoice Number)</label>
+                <label className="text-[0.62rem] font-heading font-black uppercase tracking-[0.16em] text-text-muted">Invoice No.</label>
                 <button
                   type="button"
                   onClick={() => setIsResetCounterModalOpen(true)}
@@ -629,6 +633,18 @@ const NewBill = () => {
                   </span>
                 )}
               </div>
+            </div>
+
+            {/* Serial Number (Manual Input) Field */}
+            <div className="space-y-2 pb-4 border-b border-border/30">
+              <label className="text-[0.62rem] font-heading font-black uppercase tracking-[0.16em] text-text-muted">Serial No.</label>
+              <input
+                type="text"
+                placeholder="Enter Serial No..."
+                className="w-full px-5 h-[48px] rounded-xl outline-none font-mono font-[700] text-[0.8rem] bg-primary/40 border border-border/50 text-white placeholder:font-[600] placeholder:text-[0.68rem] placeholder:text-text-muted placeholder:uppercase placeholder:tracking-[0.14em] focus:border-accent focus:shadow-glow transition-all"
+                value={serialNo}
+                onChange={(e) => setSerialNo(e.target.value)}
+              />
             </div>
 
             <div className="flex items-center justify-between">
