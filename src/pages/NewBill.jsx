@@ -607,10 +607,22 @@ const NewBill = () => {
         {/* RIGHT: Summary & Recipient */}
         <div className="w-full lg:w-[420px] space-y-8 animate-section">
           <div className="p-8 rounded-[32px] bg-secondary/80 backdrop-blur-md border border-border/50 space-y-8">
-            {/* Invoice Number Field */}
+            {/* Serial Number (Manual Input) Field */}
             <div className="space-y-2 pb-4">
+              <label className="text-[0.62rem] font-heading font-black uppercase tracking-[0.16em] text-text-muted">Serial No.</label>
+              <input
+                type="text"
+                placeholder="Enter Serial No..."
+                className="w-full px-5 h-[48px] rounded-xl outline-none font-mono font-[700] text-[0.8rem] bg-primary/40 border border-border/50 text-white placeholder:font-[600] placeholder:text-[0.68rem] placeholder:text-text-muted placeholder:uppercase placeholder:tracking-[0.14em] focus:border-accent focus:shadow-glow transition-all"
+                value={serialNo}
+                onChange={(e) => setSerialNo(e.target.value)}
+              />
+            </div>
+
+            {/* Invoice Number Field */}
+            <div className="space-y-2 pb-4 border-b border-border/30">
               <div className="flex justify-between items-center">
-                <label className="text-[0.62rem] font-heading font-black uppercase tracking-[0.16em] text-text-muted">Invoice No.</label>
+                <label className="text-[0.62rem] font-heading font-black uppercase tracking-[0.16em] text-text-muted">Invoice Number</label>
                 <button
                   type="button"
                   onClick={() => setIsResetCounterModalOpen(true)}
@@ -633,18 +645,6 @@ const NewBill = () => {
                   </span>
                 )}
               </div>
-            </div>
-
-            {/* Serial Number (Manual Input) Field */}
-            <div className="space-y-2 pb-4 border-b border-border/30">
-              <label className="text-[0.62rem] font-heading font-black uppercase tracking-[0.16em] text-text-muted">Serial No.</label>
-              <input
-                type="text"
-                placeholder="Enter Serial No..."
-                className="w-full px-5 h-[48px] rounded-xl outline-none font-mono font-[700] text-[0.8rem] bg-primary/40 border border-border/50 text-white placeholder:font-[600] placeholder:text-[0.68rem] placeholder:text-text-muted placeholder:uppercase placeholder:tracking-[0.14em] focus:border-accent focus:shadow-glow transition-all"
-                value={serialNo}
-                onChange={(e) => setSerialNo(e.target.value)}
-              />
             </div>
 
             <div className="flex items-center justify-between">
