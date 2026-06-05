@@ -16,15 +16,21 @@ import { db } from './config';
 const billsCol = collection(db, 'bills');
 
 export const getNextBillNumber = async () => {
-  const settingsRef = doc(db, 'settings', 'shop');
-  const settingsSnap = await getDoc(settingsRef);
-  
-  if (!settingsSnap.exists()) {
+  const counterRef = doc(db, 'settings', 'invoiceCounter');
+  const counterSnap = await getDoc(counterRef);
+  if (!counterSnap.exists()) {
     return "0001";
   }
-  
-  const { billCounter } = settingsSnap.data();
-  return String((billCounter || 0) + 1).padStart(4, '0');
+  const { lastInvoiceNumber } = counterSnap.data();
+  return String((lastInvoiceNumber || 0) + 1).padStart(4, '0');
+};
+
+export const getNextInvoiceNumber = getNextBillNumber;
+
+export const resetInvoiceCounter = async () => {
+  const counterRef = doc(db, 'settings', 'invoiceCounter');
+  const { setDoc } = await import('firebase/firestore');
+  await setDoc(counterRef, { lastInvoiceNumber: 0 }, { merge: true });
 };
 
 export const createBill = async (billData) => {
@@ -33,11 +39,13 @@ export const createBill = async (billData) => {
   return await runTransaction(db, async (transaction) => {
     // --- 1. ALL READS FIRST ---
     
-    // Get settings (Atomic Lock)
-    const settingsRef = doc(db, 'settings', 'shop');
-    const settingsSnap = await transaction.get(settingsRef);
-    if (!settingsSnap.exists()) throw new Error("Settings not found");
-    const settings = settingsSnap.data();
+    // Get invoice counter document (Atomic Lock)
+    const counterRef = doc(db, 'settings', 'invoiceCounter');
+    const counterSnap = await transaction.get(counterRef);
+    let lastInvoiceNumber = 0;
+    if (counterSnap.exists()) {
+      lastInvoiceNumber = counterSnap.data().lastInvoiceNumber || 0;
+    }
 
     // Get all products
     const productSnaps = [];
@@ -58,18 +66,9 @@ export const createBill = async (billData) => {
 
     // --- 2. LOGIC & WRITES ---
 
-    // Generate Sequential Bill Number or use manual input (1, 2, 3...)
-    const newCounter = (settings.billCounter || 0) + 1;
-    const billNo = billData.billNo ? String(billData.billNo).trim() : String(newCounter).padStart(4, '0');
-
-    // Sync settings counter with custom bill number if it's numeric and higher
-    let updatedCounter = settings.billCounter || 0;
-    const parsedBillNo = parseInt(billNo, 10);
-    if (!isNaN(parsedBillNo) && parsedBillNo > updatedCounter) {
-      updatedCounter = parsedBillNo;
-    } else if (!billData.billNo) {
-      updatedCounter = newCounter;
-    }
+    // The billNo is determined by the next increment
+    const nextNumber = lastInvoiceNumber + 1;
+    const billNo = String(nextNumber).padStart(4, '0');
 
     // Update stocks (with strict validation)
     productSnaps.forEach(({ ref, snap }, index) => {
@@ -89,10 +88,9 @@ export const createBill = async (billData) => {
       });
     }
 
-    // Save the bill with the confirmed UNIQUE billNo
+    // Save the bill
     const newBillRef = doc(billsCol);
     
-    // Create copy of billData without billNo to avoid redundancy
     const cleanedBillData = { ...billData };
     delete cleanedBillData.billNo;
 
@@ -103,8 +101,8 @@ export const createBill = async (billData) => {
       createdAt: serverTimestamp()
     });
 
-    // Update settings counter
-    transaction.update(settingsRef, { billCounter: updatedCounter });
+    // Update settings counter document
+    transaction.set(counterRef, { lastInvoiceNumber: nextNumber }, { merge: true });
 
     return { id: newBillRef.id, billNo };
   });
@@ -118,7 +116,9 @@ export const getBills = (callback, filters = {}) => {
   }
   
   return onSnapshot(q, (snapshot) => {
-    const bills = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const bills = snapshot.docs
+      .map(doc => ({ id: doc.id, ...doc.data() }))
+      .filter(bill => bill.isDeleted !== true);
     callback(bills);
   });
 };

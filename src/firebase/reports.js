@@ -24,7 +24,9 @@ export const getDailySales = async (date) => {
   );
   
   const snapshot = await getDocs(q);
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  return snapshot.docs
+    .map(doc => ({ id: doc.id, ...doc.data() }))
+    .filter(bill => bill.isDeleted !== true);
 };
 
 export const getMonthlySales = async (year, month) => {
@@ -40,7 +42,9 @@ export const getMonthlySales = async (year, month) => {
   );
   
   const snapshot = await getDocs(q);
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  return snapshot.docs
+    .map(doc => ({ id: doc.id, ...doc.data() }))
+    .filter(bill => bill.isDeleted !== true);
 };
 
 export const getTopProducts = async (startDate, endDate) => {
@@ -57,8 +61,11 @@ export const getTopProducts = async (startDate, endDate) => {
   const snapshot = await getDocs(q);
   const sales = {};
   
-  snapshot.docs.forEach(doc => {
-    const bill = doc.data();
+  const activeBills = snapshot.docs
+    .map(doc => ({ id: doc.id, ...doc.data() }))
+    .filter(bill => bill.isDeleted !== true);
+
+  activeBills.forEach(bill => {
     bill.items.forEach(item => {
       if (!sales[item.productId]) {
         sales[item.productId] = { 

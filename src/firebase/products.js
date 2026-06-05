@@ -17,7 +17,9 @@ const productsCol = collection(db, 'products');
 
 export const getProducts = (callback) => {
   return onSnapshot(productsCol, (snapshot) => {
-    const products = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const products = snapshot.docs
+      .map(doc => ({ id: doc.id, ...doc.data() }))
+      .filter(p => p.isDeleted !== true);
     callback(products);
   });
 };

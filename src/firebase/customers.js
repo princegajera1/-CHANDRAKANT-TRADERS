@@ -17,7 +17,9 @@ const paymentsCol = collection(db, 'payments');
 export const getCustomers = (callback) => {
   const q = query(customersCol, orderBy('name', 'asc'));
   return onSnapshot(q, (snapshot) => {
-    const customers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const customers = snapshot.docs
+      .map(doc => ({ id: doc.id, ...doc.data() }))
+      .filter(cust => cust.isDeleted !== true);
     callback(customers);
   });
 };

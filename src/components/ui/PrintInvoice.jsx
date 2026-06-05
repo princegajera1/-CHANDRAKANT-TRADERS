@@ -139,7 +139,7 @@ export const PrintInvoice = ({ bill, shopSettings, safeFormatDate, amountToWords
                   <tbody>
                     <tr>
                       <td className="w-24">Invoice No.</td>
-                      <td className="font-bold">: {shopSettings?.invoicePrefix || ''}{bill.billNo}</td>
+                      <td className="font-bold">: #{bill.billNo}</td>
                     </tr>
                     <tr>
                       <td>Date</td>

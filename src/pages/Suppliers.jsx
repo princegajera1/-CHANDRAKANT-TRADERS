@@ -6,9 +6,14 @@ import { Search, Plus, Phone, MapPin, Edit2, Trash2, Truck, Users, TrendingUp, W
 import { StatCard } from '../components/ui/StatCard';
 import { Modal } from '../components/ui/Modal';
 import toast from 'react-hot-toast';
+import { ResetArchivesButton } from '../components/ui/ResetArchivesButton';
+import { db } from '../firebase/config';
+import { doc, updateDoc } from 'firebase/firestore';
+import { useAuthContext } from '../context/AuthContext';
 
 const Suppliers = () => {
   const { suppliers, loading } = useSuppliers();
+  const { isReadOnly } = useAuthContext();
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingSupplier, setEditingSupplier] = useState(null);
@@ -75,6 +80,25 @@ const Suppliers = () => {
     }
   };
 
+  const handleResetArchives = async () => {
+    if (isReadOnly) return toast.error('Access Denied: Read-Only Mode');
+    try {
+      const activeSuppliers = suppliers.filter(s => s.isDeleted !== true);
+      const updatePromises = activeSuppliers.map(supplier => 
+        updateDoc(doc(db, 'suppliers', supplier.id), {
+          isDeleted: true,
+          deletedAt: new Date().toISOString(),
+          originalCollection: 'suppliers'
+        })
+      );
+      await Promise.all(updatePromises);
+      toast.success('Archives moved to Recycle Bin');
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to move archives to Recycle Bin');
+    }
+  };
+
   const filteredSuppliers = suppliers.filter(s => 
     (s.name || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
     (s.phone || '').includes(searchTerm) ||
@@ -92,12 +116,15 @@ const Suppliers = () => {
           <h2 className="font-heading font-[800] text-[1.6rem] text-white uppercase">Supply Chain Core</h2>
           <p className="font-body italic font-[400] text-[0.75rem] text-white/40 mt-1 sentence-case first-letter:uppercase">Manufacturer network and logistics intelligence</p>
         </div>
-        <button 
-          onClick={() => { resetForm(); setIsModalOpen(true); }} 
-          className="h-[46px] px-8 rounded-xl bg-[#FF6A00] text-white font-black text-[0.7rem] uppercase tracking-widest shadow-lg shadow-[#FF6A0033] hover:translate-y-[-2px] transition-all flex items-center gap-2 admin-btn-hover"
-        >
-          <Plus size={18} /> Enlist New Supplier
-        </button>
+        <div className="flex items-center gap-4">
+          <ResetArchivesButton onConfirm={handleResetArchives} subtitle="This will move all supplier records to the Recycle Bin." />
+          <button 
+            onClick={() => { resetForm(); setIsModalOpen(true); }} 
+            className="h-[46px] px-8 rounded-xl bg-[#FF6A00] text-white font-black text-[0.7rem] uppercase tracking-widest shadow-lg shadow-[#FF6A0033] hover:translate-y-[-2px] transition-all flex items-center gap-2 admin-btn-hover cursor-pointer"
+          >
+            <Plus size={18} /> Enlist New Supplier
+          </button>
+        </div>
       </div>
 
       {/* Controls */}

@@ -16,7 +16,9 @@ const purchasesCol = collection(db, 'purchases');
 
 export const getSuppliers = (callback) => {
   return onSnapshot(suppliersCol, (snapshot) => {
-    const suppliers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const suppliers = snapshot.docs
+      .map(doc => ({ id: doc.id, ...doc.data() }))
+      .filter(sup => sup.isDeleted !== true);
     callback(suppliers);
   });
 };

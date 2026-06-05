@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Modal } from './Modal';
 import { ShieldAlert } from 'lucide-react';
 
-export const PasswordModal = ({ isOpen, onClose, onConfirm, title = "Confirm Reset" }) => {
+export const PasswordModal = ({ isOpen, onClose, onConfirm, title = "Confirm Reset", subtitle, confirmLabel = "Confirm" }) => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
@@ -33,6 +33,11 @@ export const PasswordModal = ({ isOpen, onClose, onConfirm, title = "Confirm Res
     >
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="space-y-3">
+          {subtitle && (
+            <p className="text-[0.75rem] text-[#8899A6] font-body -mt-2 mb-4 uppercase tracking-wider leading-relaxed">
+              {subtitle}
+            </p>
+          )}
           <label className="text-[0.68rem] text-text-muted uppercase tracking-[0.14em] font-black block">
             Authorization Required
           </label>
@@ -68,7 +73,7 @@ export const PasswordModal = ({ isOpen, onClose, onConfirm, title = "Confirm Res
             type="submit"
             className="flex-1 h-[50px] rounded-xl bg-accent text-[0.72rem] font-body font-[700] uppercase tracking-[0.12em] text-primary shadow-glow hover:bg-accent/85 hover:translate-y-[-1px] transition-all"
           >
-            Confirm
+            {confirmLabel}
           </button>
         </div>
       </form>

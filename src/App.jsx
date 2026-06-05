@@ -23,7 +23,8 @@ import CustomerDetail from './pages/CustomerDetail';
 import Suppliers from './pages/Suppliers';
 import Reports from './pages/Reports';
 import Settings from './pages/Settings';
-import Trash from './pages/Trash';
+import RecycleBin from './pages/RecycleBin';
+import Custom from './pages/Custom';
 import Profile from './pages/Profile';
 import Contact from './pages/Contact';
 import Inquiries from './pages/Inquiries';
@@ -75,7 +76,8 @@ function App() {
             <Route path="/suppliers" element={<ProtectedRoute><Suppliers /></ProtectedRoute>} />
             <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-            <Route path="/trash" element={<ProtectedRoute><Trash /></ProtectedRoute>} />
+            <Route path="/recycle-bin" element={<ProtectedRoute><RecycleBin /></ProtectedRoute>} />
+            <Route path="/custom" element={<ProtectedRoute><Custom /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
             <Route path="/inquiries" element={<ProtectedRoute><Inquiries /></ProtectedRoute>} />
             <Route path="/users" element={<ProtectedRoute requireSuperAdmin><Users /></ProtectedRoute>} />

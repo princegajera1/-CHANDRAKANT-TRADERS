@@ -7,6 +7,8 @@ import {
 } from 'lucide-react';
 import { useAuthContext } from '../../context/AuthContext';
 import { Modal } from '../ui/Modal';
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { db } from '../../firebase/config';
 
 export const Sidebar = ({ isOpen, onClose, isCollapsed, setIsCollapsed }) => {
   const location = useLocation();
@@ -14,6 +16,35 @@ export const Sidebar = ({ isOpen, onClose, isCollapsed, setIsCollapsed }) => {
   const [isSettingsOpen, setIsSettingsOpen] = React.useState(false);
   const { logout, user, profile, isSuperAdmin } = useAuthContext();
   const [isLogoutModalOpen, setIsLogoutModalOpen] = React.useState(false);
+  const [recycleBinCount, setRecycleBinCount] = React.useState(0);
+
+  React.useEffect(() => {
+    const q1 = query(collection(db, 'bills'), where('isDeleted', '==', true));
+    const q2 = query(collection(db, 'customers'), where('isDeleted', '==', true));
+    const q3 = query(collection(db, 'suppliers'), where('isDeleted', '==', true));
+    const q4 = query(collection(db, 'customBills'), where('isDeleted', '==', true));
+
+    let count1 = 0;
+    let count2 = 0;
+    let count3 = 0;
+    let count4 = 0;
+
+    const updateCount = () => {
+      setRecycleBinCount(count1 + count2 + count3 + count4);
+    };
+
+    const unsub1 = onSnapshot(q1, snap => { count1 = snap.size; updateCount(); });
+    const unsub2 = onSnapshot(q2, snap => { count2 = snap.size; updateCount(); });
+    const unsub3 = onSnapshot(q3, snap => { count3 = snap.size; updateCount(); });
+    const unsub4 = onSnapshot(q4, snap => { count4 = snap.size; updateCount(); });
+
+    return () => {
+      unsub1();
+      unsub2();
+      unsub3();
+      unsub4();
+    };
+  }, []);
 
   const userRole = profile?.role || (isSuperAdmin ? 'superadmin' : 'viewer');
 
@@ -22,11 +53,12 @@ export const Sidebar = ({ isOpen, onClose, isCollapsed, setIsCollapsed }) => {
     { icon: Box, label: 'INVENTORY', path: '/inventory', roles: ['owner', 'superadmin', 'admin', 'manager', 'viewer'] },
     { icon: PlusSquare, label: 'NEW BILL', path: '/new-bill', roles: ['owner', 'superadmin', 'admin', 'manager', 'staff'] },
     { icon: FileText, label: 'TERMINAL ARCHIVES', path: '/bills', roles: ['owner', 'superadmin', 'admin', 'manager', 'staff', 'viewer'] },
+    { icon: FileText, label: 'CUSTOM BILLINGS', path: '/custom', roles: ['owner', 'superadmin', 'admin', 'manager', 'viewer'] },
     { icon: Users, label: 'CUSTOMER NETWORK', path: '/customers', roles: ['owner', 'superadmin', 'admin', 'manager', 'viewer'] },
     { icon: Truck, label: 'SUPPLY CHAIN', path: '/suppliers', roles: ['owner', 'superadmin', 'admin', 'manager', 'viewer'] },
     { icon: BarChart3, label: 'INTELLIGENCE', path: '/reports', roles: ['owner', 'superadmin', 'admin', 'manager', 'viewer'] },
     { icon: MessageSquare, label: 'INQUIRIES HUB', path: '/inquiries', roles: ['owner', 'superadmin', 'admin', 'manager'] },
-    { icon: Trash2, label: 'RECYCLE BIN', path: '/trash', roles: ['owner', 'superadmin', 'admin'] },
+    { icon: Trash2, label: 'RECYCLE BIN', path: '/recycle-bin', roles: ['owner', 'superadmin', 'admin'] },
   ];
 
   const gridNavigation = [
@@ -110,6 +142,11 @@ export const Sidebar = ({ isOpen, onClose, isCollapsed, setIsCollapsed }) => {
                   >
                     {item.label}
                   </span>
+                  {item.path === '/recycle-bin' && recycleBinCount > 0 && !isCollapsed && (
+                    <span className="absolute right-5 top-1/2 -translate-y-1/2 min-w-[18px] h-[18px] rounded-full bg-red-500 text-white font-mono text-[0.58rem] font-[800] flex items-center justify-center shadow-[0_0_10px_rgba(239,68,68,0.5)]">
+                      {recycleBinCount}
+                    </span>
+                  )}
                 </NavLink>
               );
             })}

@@ -37,7 +37,7 @@ const CustomerDetail = () => {
 
     const qBills = query(collection(db, 'bills'), where('customerId', '==', id), orderBy('createdAt', 'desc'));
     const unsubscribeBills = onSnapshot(qBills, (snap) => {
-      setBills(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      setBills(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })).filter(bill => bill.isDeleted !== true));
     });
 
     const qPayments = query(collection(db, 'payments'), where('customerId', '==', id), orderBy('createdAt', 'desc'));

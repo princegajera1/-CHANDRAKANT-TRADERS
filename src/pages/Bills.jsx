@@ -8,10 +8,10 @@ import { generateBillPDF } from '../utils/generatePDF';
 import { shareOnWhatsApp } from '../utils/whatsapp';
 import { db } from '../firebase/config';
 import { useAuthContext } from '../context/AuthContext';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { Modal } from '../components/ui/Modal';
 import { PrintInvoice } from '../components/ui/PrintInvoice';
-import { PasswordModal } from '../components/ui/PasswordModal';
+import { ResetArchivesButton } from '../components/ui/ResetArchivesButton';
 import { toast } from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 import gsap from 'gsap';
@@ -29,24 +29,22 @@ const Bills = () => {
   const [isDeleting, setIsDeleting] = useState(null);
   const [sharingBillId, setSharingBillId] = useState(null);
 
-  const [isResetModalOpen, setIsResetModalOpen] = useState(false);
-  const [isResetting, setIsResetting] = useState(false);
-
   const handleResetArchives = async () => {
     if (isReadOnly) return toast.error('Access Denied: Read-Only Mode');
-    setIsResetting(true);
     try {
-      const querySnapshot = await getDocs(collection(db, 'bills'));
-      const deletePromises = querySnapshot.docs.map(docSnap => deleteDoc(doc(db, 'bills', docSnap.id)));
-      await Promise.all(deletePromises);
-      
-      toast.success('All terminal archives wiped successfully');
-      setIsResetModalOpen(false);
+      const activeBills = bills.filter(b => b.isDeleted !== true);
+      const updatePromises = activeBills.map(bill => 
+        updateDoc(doc(db, 'bills', bill.id), {
+          isDeleted: true,
+          deletedAt: new Date().toISOString(),
+          originalCollection: 'bills'
+        })
+      );
+      await Promise.all(updatePromises);
+      toast.success('Archives moved to Recycle Bin');
     } catch (err) {
       console.error(err);
-      toast.error('Failed to wipe archives');
-    } finally {
-      setIsResetting(false);
+      toast.error('Failed to move archives to Recycle Bin');
     }
   };
 
@@ -202,12 +200,7 @@ const Bills = () => {
           <p className="font-body italic font-[400] text-[0.75rem] text-text-muted mt-1 uppercase">Authorized invoice logs and financial history</p>
         </div>
         {isSuperAdmin && (
-          <button
-            onClick={() => setIsResetModalOpen(true)}
-            className="px-6 py-3.5 rounded-xl bg-red-500/[0.08] hover:bg-red-500 hover:text-white hover:shadow-lg hover:shadow-red-500/20 text-red-500 font-heading font-black text-[0.72rem] uppercase tracking-wider transition-all border border-red-500/20 active:scale-95 cursor-pointer"
-          >
-            Reset Archives
-          </button>
+          <ResetArchivesButton onConfirm={handleResetArchives} subtitle="This will move all invoice records to the Recycle Bin." />
         )}
       </div>
 
@@ -446,13 +439,6 @@ const Bills = () => {
           </div>
         </div>
       </Modal>
-
-      <PasswordModal 
-        isOpen={isResetModalOpen} 
-        onClose={() => setIsResetModalOpen(false)} 
-        onConfirm={handleResetArchives} 
-        title="Confirm Reset"
-      />
     </div>
   );
 };

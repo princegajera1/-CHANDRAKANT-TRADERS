@@ -294,6 +294,11 @@ const Settings = () => {
       setSettings(prev => ({ ...prev, billCounter: 0 }));
       const newSettingsLocal = { ...settings, billCounter: 0 };
       localStorage.setItem('shopSettings', JSON.stringify(newSettingsLocal));
+      
+      const counterRef = doc(db, 'settings', 'invoiceCounter');
+      const { setDoc } = await import('firebase/firestore');
+      await setDoc(counterRef, { lastInvoiceNumber: 0 }, { merge: true });
+
       toast.success('Invoice sequence counter reset to 0000 (Next bill will start from 0001)');
     } catch (err) {
       toast.error('Failed to reset counter');

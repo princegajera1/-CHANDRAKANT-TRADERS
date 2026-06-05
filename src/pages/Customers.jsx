@@ -9,6 +9,9 @@ import { Modal } from '../components/ui/Modal';
 import { StatCard } from '../components/ui/StatCard';
 import { Search, UserPlus, Phone, CreditCard, ChevronRight, TrendingUp, Users, Wallet, ArrowRight, Edit2, Trash2, Eye } from 'lucide-react';
 import { validateGSTIN, validatePAN, extractPANFromGSTIN } from '../utils/gstValidation';
+import { ResetArchivesButton } from '../components/ui/ResetArchivesButton';
+import { db } from '../firebase/config';
+import { doc, updateDoc } from 'firebase/firestore';
 
 const Customers = () => {
   const { customers, loading } = useCustomers();
@@ -122,6 +125,25 @@ const Customers = () => {
     }
   };
 
+  const handleResetArchives = async () => {
+    if (isReadOnly) return toast.error('Access Denied: Read-Only Mode');
+    try {
+      const activeCustomers = customers.filter(c => c.isDeleted !== true);
+      const updatePromises = activeCustomers.map(customer => 
+        updateDoc(doc(db, 'customers', customer.id), {
+          isDeleted: true,
+          deletedAt: new Date().toISOString(),
+          originalCollection: 'customers'
+        })
+      );
+      await Promise.all(updatePromises);
+      toast.success('Archives moved to Recycle Bin');
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to move archives to Recycle Bin');
+    }
+  };
+
   const safeFormatDate = (timestamp) => {
     if (!timestamp) return '-';
     const date = timestamp?.toDate ? timestamp.toDate() : new Date(timestamp);
@@ -139,12 +161,15 @@ const Customers = () => {
           <h2 className="font-heading font-[800] text-[1.6rem] text-white uppercase">Customer Network</h2>
           <p className="font-body italic font-[400] text-[0.75rem] text-white/40 mt-1 sentence-case first-letter:uppercase">Global client registry and account intelligence</p>
         </div>
-        <button 
-          onClick={() => { resetForm(); setIsModalOpen(true); }} 
-          className="h-[46px] px-8 rounded-xl bg-[#FF6A00] text-white font-black text-[0.7rem] uppercase tracking-widest shadow-lg shadow-[#FF6A0033] hover:translate-y-[-2px] transition-all flex items-center gap-2 admin-btn-hover"
-        >
-          <UserPlus size={18} /> Add Customer
-        </button>
+        <div className="flex items-center gap-4">
+          <ResetArchivesButton onConfirm={handleResetArchives} subtitle="This will move all customer records to the Recycle Bin." />
+          <button 
+            onClick={() => { resetForm(); setIsModalOpen(true); }} 
+            className="h-[46px] px-8 rounded-xl bg-[#FF6A00] text-white font-black text-[0.7rem] uppercase tracking-widest shadow-lg shadow-[#FF6A0033] hover:translate-y-[-2px] transition-all flex items-center gap-2 admin-btn-hover cursor-pointer"
+          >
+            <UserPlus size={18} /> Add Customer
+          </button>
+        </div>
       </div>
 
       {/* Controls */}

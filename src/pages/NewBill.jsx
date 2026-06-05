@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Plus, Trash2, ShoppingCart, CheckCircle, Printer, Share2, Users, Wallet, Minus, ArrowRight, Edit2, ChevronDown, ChevronUp, Lock } from 'lucide-react';
+import { Search, Plus, Trash2, ShoppingCart, CheckCircle, Printer, Share2, Users, Wallet, Minus, ArrowRight, Edit2, ChevronDown, ChevronUp, Lock, RefreshCw } from 'lucide-react';
 import { useProducts } from '../hooks/useProducts';
 import { useCustomers } from '../hooks/useCustomers';
-import { createBill, getNextBillNumber } from '../firebase/bills';
+import { createBill, getNextInvoiceNumber, resetInvoiceCounter } from '../firebase/bills';
 import { addCustomer } from '../firebase/customers';
 import { useAuthContext } from '../context/AuthContext';
 import { toast } from 'react-hot-toast';
@@ -48,6 +48,8 @@ const NewBill = () => {
   const [ackDate, setAckDate] = useState('');
   const [ackNo, setAckNo] = useState('');
   const [billNo, setBillNo] = useState('');
+  const [loadingCounter, setLoadingCounter] = useState(true);
+  const [isResetCounterModalOpen, setIsResetCounterModalOpen] = useState(false);
   
   const [isSaving, setIsSaving] = useState(false);
   const [savedBill, setSavedBill] = useState(null);
@@ -59,11 +61,14 @@ const NewBill = () => {
   // Fetch next bill number on mount to pre-fill the serial number
   useEffect(() => {
     const fetchNextBillNo = async () => {
+      setLoadingCounter(true);
       try {
-        const nextNo = await getNextBillNumber();
+        const nextNo = await getNextInvoiceNumber();
         setBillNo(nextNo);
       } catch (err) {
         console.error("Failed to load next bill number", err);
+      } finally {
+        setLoadingCounter(false);
       }
     };
     fetchNextBillNo();
@@ -405,11 +410,29 @@ const NewBill = () => {
     setEwayBillNo('');
     setAckDate('');
     setAckNo('');
+    setLoadingCounter(true);
     try {
-      const nextNo = await getNextBillNumber();
+      const nextNo = await getNextInvoiceNumber();
       setBillNo(nextNo);
     } catch (err) {
       console.error("Failed to load next bill number", err);
+    } finally {
+      setLoadingCounter(false);
+    }
+  };
+
+  const handleResetCounterConfirm = async () => {
+    if (isReadOnly) return toast.error('Access Denied: Read-Only Mode');
+    setLoadingCounter(true);
+    try {
+      await resetInvoiceCounter();
+      setBillNo('0001');
+      toast.success('Invoice counter reset to 0001');
+    } catch (error) {
+      console.error(error);
+      toast.error('Failed to reset invoice counter');
+    } finally {
+      setLoadingCounter(false);
     }
   };
 
@@ -582,14 +605,30 @@ const NewBill = () => {
           <div className="p-8 rounded-[32px] bg-secondary/80 backdrop-blur-md border border-border/50 space-y-8">
             {/* Serial Number (Invoice No) Input Field */}
             <div className="space-y-2 pb-4 border-b border-border/30">
-              <label className="text-[0.62rem] font-heading font-black uppercase tracking-[0.16em] text-text-muted">Serial No. (Invoice Number)</label>
-              <input
-                type="text"
-                placeholder="Enter Serial No..."
-                className="w-full px-5 h-[48px] rounded-xl outline-none font-body font-[700] text-[0.82rem] bg-primary/40 border border-border/50 text-white placeholder:text-text-muted/60 focus:border-accent focus:shadow-glow transition-all"
-                value={billNo}
-                onChange={(e) => setBillNo(e.target.value)}
-              />
+              <div className="flex justify-between items-center">
+                <label className="text-[0.62rem] font-heading font-black uppercase tracking-[0.16em] text-text-muted">Serial No. (Invoice Number)</label>
+                <button
+                  type="button"
+                  onClick={() => setIsResetCounterModalOpen(true)}
+                  className="text-[0.65rem] font-heading font-bold text-accent hover:text-accent/80 transition-colors flex items-center gap-1 cursor-pointer bg-transparent border-none outline-none"
+                >
+                  <RefreshCw size={10} /> Reset Counter
+                </button>
+              </div>
+              <div className="relative flex items-center w-full">
+                <input
+                  type="text"
+                  readOnly
+                  disabled
+                  value={loadingCounter ? 'Fetching...' : billNo}
+                  className="w-full px-5 h-[48px] rounded-xl outline-none font-mono font-[700] text-[0.82rem] bg-primary/20 border border-border/30 text-white/50 cursor-not-allowed select-none"
+                />
+                {!loadingCounter && (
+                  <span className="absolute right-4 px-2 py-0.5 rounded bg-accent/10 border border-accent/20 text-[0.55rem] font-heading font-black text-accent tracking-wider uppercase">
+                    AUTO
+                  </span>
+                )}
+              </div>
             </div>
 
             <div className="flex items-center justify-between">
@@ -834,6 +873,14 @@ const NewBill = () => {
           </div>
         </div>
       </div>
+      <PasswordModal
+        isOpen={isResetCounterModalOpen}
+        onClose={() => setIsResetCounterModalOpen(false)}
+        onConfirm={handleResetCounterConfirm}
+        title="Reset Invoice Counter"
+        subtitle="This will reset invoice numbering back to 0001. Next bill will be #0001."
+        confirmLabel="Reset"
+      />
     </div>
   );
 };
