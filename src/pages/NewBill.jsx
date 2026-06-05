@@ -6,10 +6,11 @@ import { createBill, getNextBillNumber } from '../firebase/bills';
 import { addCustomer } from '../firebase/customers';
 import { useAuthContext } from '../context/AuthContext';
 import { toast } from 'react-hot-toast';
-import { shareOnWhatsApp, queueWhatsAppBill } from '../utils/whatsapp';
+import { queueWhatsAppBill } from '../utils/whatsapp';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { PrintInvoice } from '../components/ui/PrintInvoice';
+import { PasswordModal } from '../components/ui/PasswordModal';
 import { validateGSTIN, validatePAN, extractPANFromGSTIN } from '../utils/gstValidation';
 import { amountToWords } from '../utils/amountToWords';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -51,7 +52,7 @@ const NewBill = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [savedBill, setSavedBill] = useState(null);
   const [shopSettings, setShopSettings] = useState(null);
-  const [isSharingWhatsApp, setIsSharingWhatsApp] = useState(false);
+  const [showResetModal, setShowResetModal] = useState(false);
 
   const pageRef = useRef(null);
 
@@ -385,11 +386,6 @@ const NewBill = () => {
       }
       
       setSavedBill(finalBill);
-      if (finalBill.customerPhone) {
-        shareOnWhatsApp(finalBill, shopSettings).catch(err => {
-          console.error("Auto WhatsApp share failed:", err);
-        });
-      }
     } catch (error) {
       toast.error('Synchronization Fault');
     } finally {
@@ -429,16 +425,6 @@ const NewBill = () => {
     }, 150);
   };
 
-  const handleWhatsAppShare = async () => {
-    setIsSharingWhatsApp(true);
-    try {
-      await shareOnWhatsApp(savedBill, shopSettings);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setIsSharingWhatsApp(false);
-    }
-  };
 
   if (savedBill) {
     return (
@@ -453,23 +439,11 @@ const NewBill = () => {
               <p className="font-mono text-white/40 mt-2 uppercase tracking-widest text-[0.8rem] font-black">Invoice Serial: <span className="text-accent font-bold">#{savedBill.billNo}</span></p>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
               <button onClick={handlePrint} className="h-16 rounded-2xl bg-white/5 border border-border/50 hover:bg-white/10 transition-all text-white font-heading font-black text-[0.7rem] uppercase tracking-widest flex items-center justify-center gap-3">
                 <Printer size={20} className="text-accent" /> Print Log
               </button>
-              <button 
-                onClick={handleWhatsAppShare} 
-                disabled={isSharingWhatsApp}
-                className="h-16 rounded-2xl bg-white/5 border border-border/50 hover:bg-white/10 transition-all text-white font-heading font-black text-[0.7rem] uppercase tracking-widest flex items-center justify-center gap-3 disabled:opacity-50"
-              >
-                {isSharingWhatsApp ? (
-                  <div className="w-5 h-5 border-2 border-accent-green/20 border-t-accent-green rounded-full animate-spin"></div>
-                ) : (
-                  <Share2 size={20} className="text-accent-green" />
-                )} 
-                {isSharingWhatsApp ? 'Sharing...' : 'WhatsApp'}
-              </button>
-              <button onClick={handleReset} className="h-16 rounded-2xl bg-accent text-primary font-heading font-black text-[0.7rem] uppercase tracking-widest flex items-center justify-center gap-3 shadow-glow hover:bg-accent/85 transition-all">
+              <button onClick={() => setShowResetModal(true)} className="h-16 rounded-2xl bg-accent text-primary font-heading font-black text-[0.7rem] uppercase tracking-widest flex items-center justify-center gap-3 shadow-glow hover:bg-accent/85 transition-all">
                 <Plus size={20} /> New Protocol
               </button>
             </div>
@@ -477,6 +451,12 @@ const NewBill = () => {
         </div>
 
         <PrintInvoice bill={savedBill} shopSettings={shopSettings} safeFormatDate={safeFormatDate} amountToWords={amountToWords} />
+
+        <PasswordModal 
+          isOpen={showResetModal}
+          onClose={() => setShowResetModal(false)}
+          onConfirm={handleReset}
+        />
       </>
     );
   }

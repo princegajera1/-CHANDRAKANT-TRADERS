@@ -12,6 +12,7 @@ import { useCustomers } from '../hooks/useCustomers';
 import { useBills } from '../hooks/useBills';
 import { useSuppliers } from '../hooks/useSuppliers';
 import { Modal } from '../components/ui/Modal';
+import { PasswordModal } from '../components/ui/PasswordModal';
 import { validateGSTIN, validatePAN, extractPANFromGSTIN } from '../utils/gstValidation';
 
 const Settings = () => {
@@ -64,6 +65,9 @@ const Settings = () => {
   const [showPasswords, setShowPasswords] = useState({ current: false, new: false, confirm: false });
   const [confirmClear, setConfirmClear] = useState('');
   const [manualBillNum, setManualBillNum] = useState('');
+  const [showCounterResetModal, setShowCounterResetModal] = useState(false);
+  const [showWipeProductsModal, setShowWipeProductsModal] = useState(false);
+  const [showSystemWipeModal, setShowSystemWipeModal] = useState(false);
   
   // WhatsApp Automation states
   const [waQueue, setWaQueue] = useState([]);
@@ -283,12 +287,7 @@ const Settings = () => {
     document.body.removeChild(link);
   };
 
-  const handleResetBillCounter = async () => {
-    if (isReadOnly) {
-      toast.error('Read-only access — authorization required');
-      return;
-    }
-    if (!window.confirm('Are you absolutely sure you want to reset the invoice counter back to 0001?')) return;
+  const executeResetBillCounter = async () => {
     try {
       const settingsRef = doc(db, 'settings', 'shop');
       await updateDoc(settingsRef, { billCounter: 0 });
@@ -299,6 +298,14 @@ const Settings = () => {
     } catch (err) {
       toast.error('Failed to reset counter');
     }
+  };
+
+  const handleResetBillCounter = () => {
+    if (isReadOnly) {
+      toast.error('Read-only access — authorization required');
+      return;
+    }
+    setShowCounterResetModal(true);
   };
 
   const handleSaveManualBillNum = async () => {
@@ -345,16 +352,7 @@ const Settings = () => {
     }
   };
 
-  const handleWipeProducts = async () => {
-    if (isReadOnly) {
-      toast.error('Read-only access — authorization required');
-      return;
-    }
-    if (confirmClear !== 'DELETE PRODUCTS') {
-      toast.error('Type "DELETE PRODUCTS" in the authorization field to proceed');
-      return;
-    }
-    if (!window.confirm('WARNING: Are you absolutely sure you want to delete ALL products in stock? This cannot be undone.')) return;
+  const executeWipeProducts = async () => {
     setSaving(true);
     try {
       const snap = await getDocs(collection(db, 'products'));
@@ -369,16 +367,19 @@ const Settings = () => {
     }
   };
 
-  const handleSystemWipe = async () => {
+  const handleWipeProducts = () => {
     if (isReadOnly) {
       toast.error('Read-only access — authorization required');
       return;
     }
-    if (confirmClear !== 'WIPE SYSTEM') {
-      toast.error('Type "WIPE SYSTEM" in the authorization field to proceed');
+    if (confirmClear !== 'DELETE PRODUCTS') {
+      toast.error('Type "DELETE PRODUCTS" in the authorization field to proceed');
       return;
     }
-    if (!window.confirm('CRITICAL WARNING: This will permanently delete ALL bills, payments, customers, products and reset the invoice counter to 0. Are you absolutely sure?')) return;
+    setShowWipeProductsModal(true);
+  };
+
+  const executeSystemWipe = async () => {
     setSaving(true);
     try {
       // 1. Delete bills
@@ -411,6 +412,18 @@ const Settings = () => {
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleSystemWipe = () => {
+    if (isReadOnly) {
+      toast.error('Read-only access — authorization required');
+      return;
+    }
+    if (confirmClear !== 'WIPE SYSTEM') {
+      toast.error('Type "WIPE SYSTEM" in the authorization field to proceed');
+      return;
+    }
+    setShowSystemWipeModal(true);
   };
 
   if (loading) return <div className="p-8 text-white/50 font-black uppercase tracking-widest text-[0.7rem] animate-pulse">Syncing System Parameters...</div>;
@@ -1247,6 +1260,27 @@ const Settings = () => {
           </div>
         </form>
       </Modal>
+
+      <PasswordModal 
+        isOpen={showCounterResetModal}
+        onClose={() => setShowCounterResetModal(false)}
+        onConfirm={executeResetBillCounter}
+        title="Confirm Reset"
+      />
+
+      <PasswordModal 
+        isOpen={showWipeProductsModal}
+        onClose={() => setShowWipeProductsModal(false)}
+        onConfirm={executeWipeProducts}
+        title="Confirm Reset"
+      />
+
+      <PasswordModal 
+        isOpen={showSystemWipeModal}
+        onClose={() => setShowSystemWipeModal(false)}
+        onConfirm={executeSystemWipe}
+        title="Confirm Reset"
+      />
     </div>
   );
 };

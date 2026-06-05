@@ -11,6 +11,7 @@ import { useAuthContext } from '../context/AuthContext';
 import { doc, getDoc } from 'firebase/firestore';
 import { Modal } from '../components/ui/Modal';
 import { PrintInvoice } from '../components/ui/PrintInvoice';
+import { PasswordModal } from '../components/ui/PasswordModal';
 import { toast } from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 import gsap from 'gsap';
@@ -446,45 +447,12 @@ const Bills = () => {
         </div>
       </Modal>
 
-      <Modal 
+      <PasswordModal 
         isOpen={isResetModalOpen} 
-        onClose={() => !isResetting && setIsResetModalOpen(false)} 
-        title="WIPE TERMINAL ARCHIVES?" 
-        preventClose={true}
-      >
-        <div className="space-y-6 pt-4">
-          <div className="flex gap-4 items-start p-5 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400">
-            <AlertTriangle className="shrink-0" size={24} />
-            <div className="space-y-1">
-              <h5 className="font-heading font-black text-[0.85rem] uppercase tracking-wide text-white">CRITICAL WARNING</h5>
-              <p className="text-[0.72rem] font-body text-red-200/70 leading-relaxed">
-                This operation will permanently delete ALL invoice logs, payment history, and credit records from the system. This action is irreversible.
-              </p>
-            </div>
-          </div>
-          
-          <p className="text-[0.8rem] font-body text-white/50">
-            Are you absolutely sure you want to perform a database-level wipe of the archives?
-          </p>
-
-          <div className="flex gap-4">
-            <button 
-              disabled={isResetting}
-              onClick={() => setIsResetModalOpen(false)} 
-              className="flex-1 py-4 rounded-xl bg-transparent border border-border/50 font-body font-[700] text-[0.75rem] uppercase tracking-[0.14em] text-white/70 hover:text-white hover:border-white/30 transition-all cursor-pointer"
-            >
-              No, Cancel
-            </button>
-            <button 
-              disabled={isResetting}
-              onClick={handleResetArchives} 
-              className="flex-1 py-4 rounded-xl bg-[#FF3D57] font-body font-[700] text-[0.75rem] uppercase tracking-[0.14em] text-white shadow-[0_0_20px_rgba(255,61,87,0.3)] hover:bg-red-600 transition-all flex items-center justify-center gap-2 cursor-pointer"
-            >
-              {isResetting ? 'Wiping...' : 'Yes, Wipe Archives'}
-            </button>
-          </div>
-        </div>
-      </Modal>
+        onClose={() => setIsResetModalOpen(false)} 
+        onConfirm={handleResetArchives} 
+        title="Confirm Reset"
+      />
     </div>
   );
 };
