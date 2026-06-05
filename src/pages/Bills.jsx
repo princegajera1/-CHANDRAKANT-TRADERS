@@ -26,6 +26,7 @@ const Bills = () => {
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [shopSettings, setShopSettings] = useState(null);
   const [isDeleting, setIsDeleting] = useState(null);
+  const [sharingBillId, setSharingBillId] = useState(null);
 
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
@@ -154,6 +155,18 @@ const Bills = () => {
     setTimeout(() => {
       window.print();
     }, 150);
+  };
+
+  const handleWhatsAppShare = async (e, bill) => {
+    e.stopPropagation();
+    setSharingBillId(bill.id);
+    try {
+      await shareOnWhatsApp(bill, shopSettings);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setSharingBillId(null);
+    }
   };
 
   const numberToWords = (num) => {
@@ -322,10 +335,17 @@ const Bills = () => {
                         title="Duplicate Bill (Pre-filled)"
                       ><Copy size={18} /></button>
                       <button 
-                        onClick={(e) => { e.stopPropagation(); shareOnWhatsApp(bill, shopSettings); }}
-                        className="w-10 h-10 flex items-center justify-center rounded-xl bg-primary/40 border border-border/50 text-text-muted hover:text-accent-green hover:border-accent-green/40 hover:bg-accent-green/5 transition-all"
+                        onClick={(e) => handleWhatsAppShare(e, bill)}
+                        disabled={sharingBillId === bill.id}
+                        className="w-10 h-10 flex items-center justify-center rounded-xl bg-primary/40 border border-border/50 text-text-muted hover:text-accent-green hover:border-accent-green/40 hover:bg-accent-green/5 transition-all disabled:opacity-50"
                         title="Share on WhatsApp"
-                      ><Share2 size={18} /></button>
+                      >
+                        {sharingBillId === bill.id ? (
+                          <div className="w-4 h-4 border-2 border-accent-green/20 border-t-accent-green rounded-full animate-spin"></div>
+                        ) : (
+                          <Share2 size={18} />
+                        )}
+                      </button>
                       <button onClick={(e) => { e.stopPropagation(); setIsDeleting(bill); }} className="w-10 h-10 flex items-center justify-center rounded-xl bg-primary/40 border border-border/50 text-text-muted hover:text-accent-red hover:border-accent-red/40 hover:bg-accent-red/5 transition-all" title="Void & Revert stock"><Trash2 size={18} /></button>
                     </div>
                   </td>

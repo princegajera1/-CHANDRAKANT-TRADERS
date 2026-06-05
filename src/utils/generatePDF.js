@@ -1,9 +1,14 @@
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
 
-export const generateBillPDF = async (bill, settings) => {
-  const billDiv = document.getElementById('bill-print-area');
-  if (!billDiv) return;
+export const generateBillPDFBlob = async (bill, settings) => {
+  let billDiv = document.getElementById('bill-print-area');
+  if (!billDiv) {
+    // Retry once after a short delay in case of DOM rendering transitions
+    await new Promise(resolve => setTimeout(resolve, 500));
+    billDiv = document.getElementById('bill-print-area');
+  }
+  if (!billDiv) return null;
 
   // Provide isolated rendering state
   const parentContainer = billDiv.parentElement;
@@ -39,10 +44,22 @@ export const generateBillPDF = async (bill, settings) => {
     const imgHeight = (canvas.height * pageWidth) / canvas.width;
     
     pdf.addImage(imgData, 'PNG', 0, 0, pageWidth, Math.min(imgHeight, pageHeight));
-    pdf.save(`CT_Bill_${bill.billNo}.pdf`);
+    return pdf.output('blob');
   } finally {
     parentContainer.style.display = originalDisplay;
     billDiv.style.position = '';
     billDiv.style.left = '';
   }
+};
+
+export const generateBillPDF = async (bill, settings) => {
+  const blob = await generateBillPDFBlob(bill, settings);
+  if (!blob) return;
+
+  const pdfUrl = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = pdfUrl;
+  link.download = `CT_Bill_${bill.billNo}.pdf`;
+  link.click();
+  URL.revokeObjectURL(pdfUrl);
 };
