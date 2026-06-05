@@ -276,7 +276,7 @@ export const PrintInvoice = ({ bill, shopSettings, safeFormatDate, amountToWords
             </div>
 
             {/* SECTION F — TERMS & CONDITIONS + SIGNATURE */}
-            <div className="flex min-h-[70px]">
+            <div className="flex min-h-[70px] mt-auto">
               <div className="flex-[1.2] p-2">
                 <p className="text-[9px] font-bold mb-0.5 underline">Terms & Conditions:</p>
                 <div className="text-[8px] leading-normal text-gray-700">
@@ -299,13 +299,6 @@ export const PrintInvoice = ({ bill, shopSettings, safeFormatDate, amountToWords
                   <p className="text-[9px] m-0 text-gray-500">(Authorized Signatory)</p>
                 </div>
               </div>
-            </div>
-
-            {/* SECTION G — THANK YOU MESSAGE */}
-            <div className="w-full border-t border-black py-6 text-center mt-auto">
-              <p className="font-bold text-[11px] m-0 text-black">
-                Thank you for visiting Chandrakant Traders
-              </p>
             </div>
 
           </div>
