@@ -26,6 +26,12 @@ export const PrintInvoice = ({ bill, shopSettings, safeFormatDate, amountToWords
     ];
   }
 
+  // Check if bank details are actually configured (not empty or hyphen)
+  const hasBankDetails = (shopSettings?.panNo && shopSettings.panNo !== '-') ||
+                         (shopSettings?.bankName && shopSettings.bankName !== '-') ||
+                         (shopSettings?.bankAccount && shopSettings.bankAccount !== '-') ||
+                         (shopSettings?.bankIfsc && shopSettings.bankIfsc !== '-');
+
   // Support amount to words fallback if passed as numberToWords
   const convertAmountToWords = amountToWords || numberToWords || ((val) => {
     if (!val) return 'Zero Rupees Only';
@@ -210,13 +216,15 @@ export const PrintInvoice = ({ bill, shopSettings, safeFormatDate, amountToWords
             <div className="flex border-b border-black min-h-[120px]">
               {/* LEFT COLUMN: Bank Details & Amount Words */}
               <div className="flex-[1.2] p-2 border-r border-black flex flex-col justify-between">
-                <div className="text-[10px] leading-tight">
-                  <p className="m-0 font-bold">PAN NO.: {shopSettings?.panNo || '-'}</p>
-                  <p className="m-0 mt-0.5">Bank Name: <span className="font-semibold">{shopSettings?.bankName || '-'}</span></p>
-                  <p className="m-0">A/c No.: <span className="font-semibold">{shopSettings?.bankAccount || '-'}</span></p>
-                  <p className="m-0">IFSC Code: <span className="font-semibold">{shopSettings?.bankIfsc || '-'}</span></p>
-                  {shopSettings?.bankBranch && <p className="m-0">Branch: {shopSettings?.bankBranch}</p>}
-                </div>
+                {hasBankDetails && (
+                  <div className="text-[10px] leading-tight">
+                    {shopSettings?.panNo && shopSettings.panNo !== '-' && <p className="m-0 font-bold">PAN NO.: {shopSettings.panNo}</p>}
+                    {shopSettings?.bankName && shopSettings.bankName !== '-' && <p className="m-0 mt-0.5">Bank Name: <span className="font-semibold">{shopSettings.bankName}</span></p>}
+                    {shopSettings?.bankAccount && shopSettings.bankAccount !== '-' && <p className="m-0">A/c No.: <span className="font-semibold">{shopSettings.bankAccount}</span></p>}
+                    {shopSettings?.bankIfsc && shopSettings.bankIfsc !== '-' && <p className="m-0">IFSC Code: <span className="font-semibold">{shopSettings.bankIfsc}</span></p>}
+                    {shopSettings?.bankBranch && <p className="m-0">Branch: {shopSettings?.bankBranch}</p>}
+                  </div>
+                )}
                 
                 <div className="mt-2 text-[10px]">
                   <p className="m-0 font-bold mb-0.5">Tax Amount (in words):</p>
@@ -294,7 +302,7 @@ export const PrintInvoice = ({ bill, shopSettings, safeFormatDate, amountToWords
             </div>
 
             {/* SECTION G — THANK YOU MESSAGE */}
-            <div className="w-full border-t border-black p-3 text-center mt-auto">
+            <div className="w-full border-t border-black py-6 text-center mt-auto">
               <p className="font-bold text-[11px] m-0 text-black">
                 Thank you for visiting Chandrakant Traders
               </p>
