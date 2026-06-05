@@ -296,7 +296,7 @@ export const PrintInvoice = ({ bill, shopSettings, safeFormatDate, amountToWords
             {/* SECTION G — THANK YOU MESSAGE */}
             <div className="w-full border-t border-black p-3 text-center mt-auto">
               <p className="font-bold text-[11px] m-0 text-black">
-                Thank you for visiting Chandrakant Traders, {bill.customerName}!
+                Thank you for visiting Chandrakant Traders
               </p>
             </div>
 

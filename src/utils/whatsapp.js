@@ -28,7 +28,7 @@ ${bill.balanceDue > 0 ? `⚠️ *Balance Due: ₹${bill.balanceDue}*` : '🤝 *P
 ${upiLink ? `💳 *Pay via UPI:* ${upiLink}` : ''}
 
 📞 ${settings?.phone || '99240 58659'}
-Thank you! આભાર! 🙏
+Thank you for visiting Chandrakant Traders
     `.trim();
 
     await addDoc(collection(db, 'whatsappQueue'), {
@@ -71,7 +71,7 @@ ${bill.balanceDue > 0 ? `⚠️ *Balance Due: ₹${bill.balanceDue}*` : '🤝 *P
 ${upiLink ? `💳 *Pay via UPI:* ${upiLink}` : ''}
 
 📞 ${settings?.phone || '99240 58659'}
-Thank you! આભાર! 🙏
+Thank you for visiting Chandrakant Traders
   `.trim();
 
   const encodedMessage = encodeURIComponent(message);
