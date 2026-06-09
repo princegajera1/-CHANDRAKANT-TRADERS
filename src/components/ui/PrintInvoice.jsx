@@ -139,7 +139,7 @@ export const PrintInvoice = ({ bill, shopSettings, safeFormatDate, amountToWords
                   <tbody>
                     <tr>
                       <td className="w-24">Invoice No.</td>
-                      <td className="font-bold">: #{bill.billNo}</td>
+                      <td className="font-bold">: {bill.billNo}</td>
                     </tr>
                     <tr>
                       <td>Date</td>
@@ -192,8 +192,8 @@ export const PrintInvoice = ({ bill, shopSettings, safeFormatDate, amountToWords
                         </td>
                         <td className="p-1 text-center border-r border-black">{item.hsnCode || '4011'}</td>
                         <td className="p-1 text-right border-r border-black">{item.quantity}</td>
-                        <td className="p-1 text-right border-r border-black">{formatIndianNumber(item.unitPrice)}</td>
-                        <td className="p-1 text-right font-bold">{formatIndianNumber(item.itemTotal)}</td>
+                        <td className="p-1 text-right border-r border-black">₹{formatIndianNumber(item.unitPrice)}</td>
+                        <td className="p-1 text-right font-bold">₹{formatIndianNumber(item.itemTotal)}</td>
                       </tr>
                     );
                   })}
@@ -249,14 +249,18 @@ export const PrintInvoice = ({ bill, shopSettings, safeFormatDate, amountToWords
                         <td>Taxable Amount:</td>
                         <td className="text-right">₹{formatIndianNumber(bill.subtotal - (bill.discountAmount || 0))}</td>
                       </tr>
-                      <tr>
-                        <td>CGST (9%):</td>
-                        <td className="text-right">₹{formatIndianNumber(bill.gstAmount / 2)}</td>
-                      </tr>
-                      <tr>
-                        <td>SGST (9%):</td>
-                        <td className="text-right">₹{formatIndianNumber(bill.gstAmount / 2)}</td>
-                      </tr>
+                      {bill.customerGstin ? (
+                        <>
+                          <tr>
+                            <td>CGST (9%):</td>
+                            <td className="text-right">₹0.00</td>
+                          </tr>
+                          <tr>
+                            <td>SGST (9%):</td>
+                            <td className="text-right">₹0.00</td>
+                          </tr>
+                        </>
+                      ) : null}
                       <tr>
                         <td>Round Off:</td>
                         <td className="text-right">₹{formatIndianNumber(bill.grandTotal - (bill.subtotal - (bill.discountAmount || 0) + bill.gstAmount))}</td>
@@ -292,11 +296,11 @@ export const PrintInvoice = ({ bill, shopSettings, safeFormatDate, amountToWords
               </div>
               
               <div className="flex-[0.8] p-2 flex flex-col justify-between items-end text-right">
-                <p className="text-[10px] font-bold m-0 uppercase">For {shopSettings?.shopName || shopSettings?.name || 'CHANDRAKANT TRADERS'}</p>
+                <p className="text-[10px] font-bold m-0 uppercase">FOR {(shopSettings?.shopName || shopSettings?.name || 'CHANDRAKANT TRADERS').toUpperCase()}</p>
                 
                 <div className="mt-6">
                   <div className="w-28 border-b border-black mb-0.5"></div>
-                  <p className="text-[9px] m-0 text-gray-500">(Authorized Signatory)</p>
+                  <p className="text-[9px] m-0 text-gray-500">(Authorised Signatory)</p>
                 </div>
               </div>
             </div>

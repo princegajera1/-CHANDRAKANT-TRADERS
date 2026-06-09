@@ -415,13 +415,23 @@ const Bills = () => {
                 <span className="text-[0.7rem] font-heading font-black text-text-muted uppercase tracking-widest">Log Aggregate</span>
                 <span className="text-[0.9rem] font-mono font-black text-white/70">₹{selectedBill.subtotal?.toLocaleString('en-IN')}</span>
               </div>
-              <div className="flex justify-between mb-5 pb-5 border-b border-border/30">
-                <span className="text-[0.7rem] font-heading font-black text-text-muted uppercase tracking-widest">System Tax (GST)</span>
-                <span className="text-[0.9rem] font-mono font-black text-white/70">₹{selectedBill.gstAmount?.toLocaleString('en-IN')}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-[0.8rem] font-heading font-black text-white uppercase tracking-widest">Terminal Total</span>
-                <span className="text-[2rem] font-mono font-black text-accent leading-none drop-shadow-[0_0_8px_rgba(0,212,255,0.3)]">₹{selectedBill.grandTotal?.toLocaleString('en-IN')}</span>
+              {selectedBill.discountAmount > 0 && (
+                <div className="flex justify-between mb-3">
+                  <span className="text-[0.7rem] font-heading font-black text-accent-gold uppercase tracking-widest">Discount (18%)</span>
+                  <span className="text-[0.9rem] font-mono font-black text-accent-gold">₹{selectedBill.discountAmount?.toLocaleString('en-IN')}</span>
+                </div>
+              )}
+              {selectedBill.customerGstin && (
+                <div className="flex justify-between mb-3">
+                  <span className="text-[0.7rem] font-heading font-black text-text-muted uppercase tracking-widest">System Tax (GST)</span>
+                  <span className="text-[0.9rem] font-mono font-black text-white/70">₹{selectedBill.gstAmount?.toLocaleString('en-IN')}</span>
+                </div>
+              )}
+              <div className="border-t border-border/30 pt-5 mt-5">
+                <div className="flex justify-between items-center">
+                  <span className="text-[0.8rem] font-heading font-black text-white uppercase tracking-widest">Terminal Total</span>
+                  <span className="text-[2rem] font-mono font-black text-accent leading-none drop-shadow-[0_0_8px_rgba(0,212,255,0.3)]">₹{selectedBill.grandTotal?.toLocaleString('en-IN')}</span>
+                </div>
               </div>
             </div>
           </div>

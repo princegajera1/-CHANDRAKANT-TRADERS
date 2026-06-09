@@ -38,7 +38,6 @@ const NewBill = () => {
   });
   const [formErrors, setFormErrors] = useState({});
   
-  const [discount, setDiscount] = useState(0);
   const [paymentMode, setPaymentMode] = useState('Cash');
   const [amountPaid, setAmountPaid] = useState(0);
 
@@ -156,7 +155,6 @@ const NewBill = () => {
       setBillItems(prefilledItems);
 
       // Prefill extra details
-      setDiscount(dup.discountAmount || 0);
       setPaymentMode(dup.paymentMode || 'Cash');
       setEwayBillNo(dup.ewayBillNo || '');
       setSerialNo(dup.serialNo || '');
@@ -259,8 +257,11 @@ const NewBill = () => {
   };
 
   const subtotal = billItems.reduce((acc, item) => acc + item.itemTotal, 0);
-  const gstAmount = isGstRegistered ? 0 : subtotal * 0.05;
-  const grandTotal = subtotal + gstAmount - discount;
+  const discountAmount = isGstRegistered ? subtotal * 0.18 : 0;
+  const gstAmount = 0;
+  const rawGrandTotal = subtotal - discountAmount;
+  const grandTotal = Math.round(rawGrandTotal);
+  const roundOff = grandTotal - rawGrandTotal;
   const balanceDue = Math.max(0, grandTotal - amountPaid);
 
   const handleGSTINChange = (e) => {
@@ -372,7 +373,7 @@ const NewBill = () => {
         items: finalItems,
         subtotal,
         gstAmount,
-        discountAmount: Number(discount),
+        discountAmount: Number(discountAmount),
         grandTotal,
         amountPaid: paymentMode === 'Credit' ? 0 : (amountPaid || grandTotal),
         balanceDue: paymentMode === 'Credit' ? grandTotal : balanceDue,
@@ -405,7 +406,6 @@ const NewBill = () => {
     setBillItems([]);
     setSavedBill(null);
     setAmountPaid(0);
-    setDiscount(0);
     setNewCustomerData({ name: '', phone: '', email: '', address: '', vehicleNo: '', gstin: '', pan: '', transporter: '', balance: 0, bankName: '', accountNumber: '', ifscCode: '' });
     setFormErrors({});
     setSelectedCustomer(null);
@@ -463,7 +463,7 @@ const NewBill = () => {
             </div>
             <div>
               <h2 className="font-heading font-[800] text-[1.8rem] text-white uppercase tracking-wider">Log Synchronized</h2>
-              <p className="font-mono text-white/40 mt-2 uppercase tracking-widest text-[0.8rem] font-black">Invoice Serial: <span className="text-accent font-bold">#{savedBill.billNo}</span></p>
+              <p className="font-mono text-white/40 mt-2 uppercase tracking-widest text-[0.8rem] font-black">Invoice Serial: <span className="text-accent font-bold">{savedBill.billNo}</span></p>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
@@ -808,27 +808,26 @@ const NewBill = () => {
                 <span className="font-mono font-[600] text-[0.82rem] text-white">₹{subtotal.toLocaleString()}</span>
               </div>
               {isGstRegistered ? (
-                <div className="flex flex-col py-3">
-                  <div className="flex justify-between items-center">
-                    <span className="font-body font-[400] text-[0.78rem] text-accent-green lowercase first-letter:uppercase">Standard GST (0%)</span>
-                    <span className="font-mono font-[600] text-[0.82rem] text-accent-green">₹0</span>
+                <>
+                  <div className="flex justify-between items-center mt-2">
+                    <span className="font-body font-[400] text-[0.78rem] text-text-muted lowercase first-letter:uppercase">CGST (9%)</span>
+                    <span className="font-mono font-[600] text-[0.82rem] text-white">₹0.00</span>
                   </div>
-                  <span className="text-[0.65rem] text-accent-green/50 italic mt-1 text-right font-mono">Reverse Charge - GST Registered</span>
-                </div>
-              ) : (
-                <div className="flex justify-between items-center">
-                  <span className="font-body font-[400] text-[0.78rem] text-text-muted lowercase first-letter:uppercase">Standard GST (5%)</span>
-                  <span className="font-mono font-[600] text-[0.82rem] text-white">₹{gstAmount.toLocaleString()}</span>
-                </div>
-              )}
-              <div className="flex justify-between items-center py-6 border-y border-border/30">
-                <span className="font-body font-[400] text-[0.78rem] text-accent-gold lowercase first-letter:uppercase">Discount override</span>
-                <input
-                  type="number"
-                  className="w-28 h-[36px] px-3 text-right rounded-lg bg-primary/40 border border-border/50 text-accent-gold text-[0.82rem] font-[600] font-mono outline-none focus:border-accent focus:shadow-glow transition-all"
-                  value={discount}
-                  onChange={(e) => setDiscount(parseFloat(e.target.value) || 0)}
-                />
+                  <div className="flex justify-between items-center mt-2">
+                    <span className="font-body font-[400] text-[0.78rem] text-text-muted lowercase first-letter:uppercase">SGST (9%)</span>
+                    <span className="font-mono font-[600] text-[0.82rem] text-white">₹0.00</span>
+                  </div>
+                  <div className="flex justify-between items-center py-4 border-y border-border/30">
+                    <span className="font-body font-[400] text-[0.78rem] text-accent-gold lowercase first-letter:uppercase">Discount (18% absorption)</span>
+                    <span className="font-mono font-[600] text-[0.82rem] text-accent-gold">₹{discountAmount.toLocaleString()}</span>
+                  </div>
+                </>
+              ) : null}
+              <div className="flex justify-between items-center mt-2 pb-4 border-b border-border/30">
+                <span className="font-body font-[400] text-[0.78rem] text-text-muted lowercase first-letter:uppercase">Round Off</span>
+                <span className="font-mono font-[600] text-[0.82rem] text-white">
+                  {roundOff >= 0 ? `+₹${roundOff.toFixed(2)}` : `-₹${Math.abs(roundOff).toFixed(2)}`}
+                </span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="font-heading font-[700] text-[0.8rem] text-white/[0.70] uppercase">GRAND TOTAL</span>
