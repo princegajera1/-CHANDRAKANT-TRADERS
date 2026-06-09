@@ -258,7 +258,7 @@ const NewBill = () => {
 
   const subtotal = billItems.reduce((acc, item) => acc + item.itemTotal, 0);
   const discountAmount = isGstRegistered ? subtotal * 0.18 : 0;
-  const gstAmount = 0;
+  const gstAmount = isGstRegistered ? subtotal * 0.18 : 0;
   const rawGrandTotal = subtotal - discountAmount;
   const grandTotal = Math.round(rawGrandTotal);
   const roundOff = grandTotal - rawGrandTotal;
@@ -374,6 +374,7 @@ const NewBill = () => {
         subtotal,
         gstAmount,
         discountAmount: Number(discountAmount),
+        roundOff,
         grandTotal,
         amountPaid: paymentMode === 'Credit' ? 0 : (amountPaid || grandTotal),
         balanceDue: paymentMode === 'Credit' ? grandTotal : balanceDue,
@@ -811,11 +812,11 @@ const NewBill = () => {
                 <>
                   <div className="flex justify-between items-center mt-2">
                     <span className="font-body font-[400] text-[0.78rem] text-text-muted lowercase first-letter:uppercase">CGST (9%)</span>
-                    <span className="font-mono font-[600] text-[0.82rem] text-white">₹0.00</span>
+                    <span className="font-mono font-[600] text-[0.82rem] text-white">₹{(subtotal * 0.09).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                   </div>
                   <div className="flex justify-between items-center mt-2">
                     <span className="font-body font-[400] text-[0.78rem] text-text-muted lowercase first-letter:uppercase">SGST (9%)</span>
-                    <span className="font-mono font-[600] text-[0.82rem] text-white">₹0.00</span>
+                    <span className="font-mono font-[600] text-[0.82rem] text-white">₹{(subtotal * 0.09).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                   </div>
                   <div className="flex justify-between items-center py-4 border-y border-border/30">
                     <span className="font-body font-[400] text-[0.78rem] text-accent-gold lowercase first-letter:uppercase">Discount (18% absorption)</span>

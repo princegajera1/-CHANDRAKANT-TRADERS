@@ -415,16 +415,22 @@ const Bills = () => {
                 <span className="text-[0.7rem] font-heading font-black text-text-muted uppercase tracking-widest">Log Aggregate</span>
                 <span className="text-[0.9rem] font-mono font-black text-white/70">₹{selectedBill.subtotal?.toLocaleString('en-IN')}</span>
               </div>
+              {selectedBill.customerGstin && (
+                <>
+                  <div className="flex justify-between mb-3">
+                    <span className="text-[0.7rem] font-heading font-black text-text-muted uppercase tracking-widest">CGST (9%)</span>
+                    <span className="text-[0.9rem] font-mono font-black text-white/70">₹{(selectedBill.subtotal * 0.09)?.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  </div>
+                  <div className="flex justify-between mb-3">
+                    <span className="text-[0.7rem] font-heading font-black text-text-muted uppercase tracking-widest">SGST (9%)</span>
+                    <span className="text-[0.9rem] font-mono font-black text-white/70">₹{(selectedBill.subtotal * 0.09)?.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  </div>
+                </>
+              )}
               {selectedBill.discountAmount > 0 && (
                 <div className="flex justify-between mb-3">
                   <span className="text-[0.7rem] font-heading font-black text-accent-gold uppercase tracking-widest">Discount (18%)</span>
                   <span className="text-[0.9rem] font-mono font-black text-accent-gold">₹{selectedBill.discountAmount?.toLocaleString('en-IN')}</span>
-                </div>
-              )}
-              {selectedBill.customerGstin && (
-                <div className="flex justify-between mb-3">
-                  <span className="text-[0.7rem] font-heading font-black text-text-muted uppercase tracking-widest">System Tax (GST)</span>
-                  <span className="text-[0.9rem] font-mono font-black text-white/70">₹{selectedBill.gstAmount?.toLocaleString('en-IN')}</span>
                 </div>
               )}
               <div className="border-t border-border/30 pt-5 mt-5">

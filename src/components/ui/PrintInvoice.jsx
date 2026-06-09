@@ -247,23 +247,23 @@ export const PrintInvoice = ({ bill, shopSettings, safeFormatDate, amountToWords
                     <tbody>
                       <tr>
                         <td>Taxable Amount:</td>
-                        <td className="text-right">₹{formatIndianNumber(bill.subtotal - (bill.discountAmount || 0))}</td>
+                        <td className="text-right">₹{formatIndianNumber(bill.subtotal - (bill.discountAmount || 0) - (bill.customerGstin ? bill.gstAmount : 0))}</td>
                       </tr>
                       {bill.customerGstin ? (
                         <>
                           <tr>
                             <td>CGST (9%):</td>
-                            <td className="text-right">₹0.00</td>
+                            <td className="text-right">₹{formatIndianNumber(bill.gstAmount / 2)}</td>
                           </tr>
                           <tr>
                             <td>SGST (9%):</td>
-                            <td className="text-right">₹0.00</td>
+                            <td className="text-right">₹{formatIndianNumber(bill.gstAmount / 2)}</td>
                           </tr>
                         </>
                       ) : null}
                       <tr>
                         <td>Round Off:</td>
-                        <td className="text-right">₹{formatIndianNumber(bill.grandTotal - (bill.subtotal - (bill.discountAmount || 0) + bill.gstAmount))}</td>
+                        <td className="text-right">₹{formatIndianNumber(bill.roundOff !== undefined ? bill.roundOff : (bill.grandTotal - (bill.subtotal - (bill.discountAmount || 0) + (bill.customerGstin ? 0 : bill.gstAmount))))}</td>
                       </tr>
                     </tbody>
                   </table>
