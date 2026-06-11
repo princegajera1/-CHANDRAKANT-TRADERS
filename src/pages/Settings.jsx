@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { db, auth } from '../firebase/config';
 import { toast } from 'react-hot-toast';
-import { doc, getDoc, updateDoc, collection, onSnapshot, query, orderBy, limit, where, addDoc, serverTimestamp, deleteDoc, getDocs } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, setDoc, collection, onSnapshot, query, orderBy, limit, where, addDoc, serverTimestamp, deleteDoc, getDocs } from 'firebase/firestore';
 import { updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
 import { Store, Globe, Bell, Shield, Database, Save, Trash2, Link as LinkIcon, Eye, EyeOff, Users, History, UserPlus, Lock, Download, Search, CheckCircle, XCircle, UserCheck, MessageSquare } from 'lucide-react';
 import { format } from 'date-fns';
@@ -391,29 +391,45 @@ const Settings = () => {
       const billsSnap = await getDocs(collection(db, 'bills'));
       await Promise.all(billsSnap.docs.map(d => deleteDoc(doc(db, 'bills', d.id))));
 
-      // 2. Delete customers
+      // 2. Delete customBills
+      const customBillsSnap = await getDocs(collection(db, 'customBills'));
+      await Promise.all(customBillsSnap.docs.map(d => deleteDoc(doc(db, 'customBills', d.id))));
+
+      // 3. Delete customers
       const customersSnap = await getDocs(collection(db, 'customers'));
       await Promise.all(customersSnap.docs.map(d => deleteDoc(doc(db, 'customers', d.id))));
 
-      // 3. Delete products
+      // 4. Delete products
       const productsSnap = await getDocs(collection(db, 'products'));
       await Promise.all(productsSnap.docs.map(d => deleteDoc(doc(db, 'products', d.id))));
 
-      // 4. Delete payments
+      // 5. Delete suppliers
+      const suppliersSnap = await getDocs(collection(db, 'suppliers'));
+      await Promise.all(suppliersSnap.docs.map(d => deleteDoc(doc(db, 'suppliers', d.id))));
+
+      // 6. Delete purchases
+      const purchasesSnap = await getDocs(collection(db, 'purchases'));
+      await Promise.all(purchasesSnap.docs.map(d => deleteDoc(doc(db, 'purchases', d.id))));
+
+      // 7. Delete payments
       const paymentsSnap = await getDocs(collection(db, 'payments'));
       await Promise.all(paymentsSnap.docs.map(d => deleteDoc(doc(db, 'payments', d.id))));
 
-      // 5. Reset bill counter
+      // 8. Reset bill counter in shop settings
       const settingsRef = doc(db, 'settings', 'shop');
       await updateDoc(settingsRef, { billCounter: 0 });
       setSettings(prev => ({ ...prev, billCounter: 0 }));
       const newSettingsLocal = { ...settings, billCounter: 0 };
       localStorage.setItem('shopSettings', JSON.stringify(newSettingsLocal));
 
-      toast.success('Complete system wipe and database reset successful');
+      // 9. Reset invoice counter sequence document
+      const counterRef = doc(db, 'settings', 'invoiceCounter');
+      await setDoc(counterRef, { lastInvoiceNumber: 0 }, { merge: true });
+
+      toast.success('Complete software wipe and database reset successful');
       setConfirmClear('');
     } catch (err) {
-      toast.error('Wipe failed: ' + err.message);
+      toast.error('Reset failed: ' + err.message);
     } finally {
       setSaving(false);
     }
@@ -422,10 +438,6 @@ const Settings = () => {
   const handleSystemWipe = () => {
     if (isReadOnly) {
       toast.error('Read-only access — authorization required');
-      return;
-    }
-    if (confirmClear !== 'WIPE SYSTEM') {
-      toast.error('Type "WIPE SYSTEM" in the authorization field to proceed');
       return;
     }
     setShowSystemWipeModal(true);
@@ -1208,7 +1220,7 @@ const Settings = () => {
                         onClick={handleSystemWipe} 
                         className="w-full h-[46px] rounded-xl bg-red-500 text-white font-body font-[700] text-[0.7rem] uppercase tracking-[0.1em] shadow-lg shadow-red-500/20 hover:bg-red-600 transition-all"
                       >
-                        Reset Admin Panel
+                        Full Software Reset
                       </button>
                     </div>
                   </div>
