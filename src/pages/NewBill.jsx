@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Plus, Trash2, ShoppingCart, CheckCircle, Printer, Share2, Users, Wallet, Minus, ArrowRight, Edit2, ChevronDown, ChevronUp, Lock, RefreshCw } from 'lucide-react';
+import { Search, Plus, Trash2, ShoppingCart, CheckCircle, Printer, Share2, Users, Wallet, Minus, ArrowRight, Edit2, ChevronDown, ChevronUp, Lock, RefreshCw, UserPlus } from 'lucide-react';
 import { useProducts } from '../hooks/useProducts';
 import { useCustomers } from '../hooks/useCustomers';
 import { createBill, getNextInvoiceNumber, resetInvoiceCounter } from '../firebase/bills';
@@ -11,6 +11,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { PrintInvoice } from '../components/ui/PrintInvoice';
 import { PasswordModal } from '../components/ui/PasswordModal';
+import { Modal } from '../components/ui/Modal';
 import { validateGSTIN, validatePAN, extractPANFromGSTIN } from '../utils/gstValidation';
 import { amountToWords } from '../utils/amountToWords';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -29,9 +30,9 @@ const NewBill = () => {
   const [filteredProducts, setFilteredProducts] = useState([]);
   const [showProductResults, setShowProductResults] = useState(false);
   
-  const [customerMode, setCustomerMode] = useState('existing'); 
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [customerSearch, setCustomerSearch] = useState('');
+  const [isAddCustomerModalOpen, setIsAddCustomerModalOpen] = useState(false);
   
   const [newCustomerData, setNewCustomerData] = useState({ 
     name: '', phone: '', email: '', address: '', vehicleNo: '', gstin: '', pan: '', transporter: '', balance: 0, bankName: '', accountNumber: '', ifscCode: ''
@@ -103,7 +104,6 @@ const NewBill = () => {
       
       // Prefill customer
       if (dup.customerId) {
-        setCustomerMode('existing');
         const cust = customers.find(c => c.id === dup.customerId);
         if (cust) {
           setSelectedCustomer(cust);
@@ -122,22 +122,22 @@ const NewBill = () => {
             ifscCode: dup.customerIfsc
           });
         }
-      } else {
-        setCustomerMode('new');
-        setNewCustomerData({
-          name: dup.customerName || '',
+      } else if (dup.customerName) {
+        setSelectedCustomer({
+          id: null,
+          name: dup.customerName || 'CASH CUSTOMER',
           phone: dup.customerPhone || '',
           address: dup.customerAddress || '',
-          vehicleNo: dup.vehicleNo || '',
           gstin: dup.customerGstin || '',
           pan: dup.customerPan || '',
+          vehicleNo: dup.vehicleNo || '',
           transporter: dup.transporter || '',
           bankName: dup.customerBankName || '',
           accountNumber: dup.customerBankAccount || '',
-          ifscCode: dup.customerIfsc || '',
-          email: '',
-          balance: 0
+          ifscCode: dup.customerIfsc || ''
         });
+      } else {
+        setSelectedCustomer(null);
       }
 
       // Prefill items
@@ -209,9 +209,7 @@ const NewBill = () => {
     return () => ctx.revert();
   }, [savedBill]);
 
-  const isGstRegistered = customerMode === 'existing' 
-    ? !!selectedCustomer?.gstin 
-    : !!newCustomerData.gstin;
+  const isGstRegistered = !!selectedCustomer?.gstin;
 
   const addItem = (product) => {
     if (product.currentQty <= 0) {
@@ -294,75 +292,78 @@ const NewBill = () => {
     setNewCustomerData(newFormData);
   };
 
+  const handleCreateCustomer = async (e) => {
+    e.preventDefault();
+    if (isReadOnly) {
+      toast.error('Read-only access — authorization required');
+      return;
+    }
+
+    const errors = {};
+    if (newCustomerData.gstin) {
+      const gstVal = validateGSTIN(newCustomerData.gstin);
+      if (!gstVal.valid) errors.gstin = gstVal.error;
+    }
+    
+    if (newCustomerData.pan) {
+      const panVal = validatePAN(newCustomerData.pan);
+      if (!panVal.valid) errors.pan = panVal.error;
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      toast.error('Resolve customer profile errors before proceeding');
+      return;
+    }
+
+    try {
+      const customerName = newCustomerData.name.trim() || 'CASH CUSTOMER';
+      const customerToSave = {
+        ...newCustomerData,
+        name: customerName,
+        totalBillsCount: 0,
+        lastBillDate: null
+      };
+
+      const res = await addCustomer(customerToSave);
+      const savedCustomer = {
+        id: res.id,
+        ...customerToSave
+      };
+
+      setSelectedCustomer(savedCustomer);
+      setIsAddCustomerModalOpen(false);
+      setNewCustomerData({
+        name: '', phone: '', email: '', address: '', vehicleNo: '', gstin: '', pan: '', transporter: '', balance: 0, bankName: '', accountNumber: '', ifscCode: ''
+      });
+      setFormErrors({});
+      toast.success('Customer created and selected');
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to create customer');
+    }
+  };
+
   const handleSaveBill = async () => {
     if (isReadOnly) {
       toast.error('Read-only access — authorization required');
       return;
     }
     if (billItems.length === 0) return toast.error('Empty Cart Protocol: Add assets to initialize');
-    
-    if (customerMode === 'existing' && !selectedCustomer) {
-      return toast.error('Identify Recipient Profile');
-    }
 
-    let finalCustomerId = selectedCustomer?.id || null;
-    let finalCustomerName = selectedCustomer?.name || '';
-    let finalCustomerPhone = selectedCustomer?.phone || '';
-    let finalCustomerAddress = selectedCustomer?.address || '';
-    let finalVehicleNo = selectedCustomer?.vehicleNo || '';
-    let finalTransporter = selectedCustomer?.transporter || '';
-    let finalGSTIN = selectedCustomer?.gstin || '';
-    let finalPAN = selectedCustomer?.pan || '';
+    setIsSaving(true);
 
-    if (customerMode === 'new') {
-      const errors = {};
-      if (!newCustomerData.name) errors.name = 'Customer name is required';
-      if (!newCustomerData.phone) errors.phone = 'Phone number is required';
-      if (!newCustomerData.address) errors.address = 'Address is required';
-      if (!newCustomerData.vehicleNo) errors.vehicleNo = 'Vehicle number is required';
-      
-      if (newCustomerData.gstin) {
-        const gstVal = validateGSTIN(newCustomerData.gstin);
-        if (!gstVal.valid) errors.gstin = gstVal.error;
-        if (!newCustomerData.pan) errors.pan = 'PAN is required when GSTIN is provided';
-      }
-      
-      if (newCustomerData.pan) {
-        const panVal = validatePAN(newCustomerData.pan);
-        if (!panVal.valid) errors.pan = panVal.error;
-      }
-
-      if (Object.keys(errors).length > 0) {
-        setFormErrors(errors);
-        toast.error('Resolve customer profile errors before proceeding');
-        return;
-      }
-
-      setIsSaving(true);
-      try {
-        const res = await addCustomer({ ...newCustomerData, totalBillsCount: 0, lastBillDate: null });
-        finalCustomerId = res.id;
-        finalCustomerName = newCustomerData.name;
-        finalCustomerPhone = newCustomerData.phone;
-        finalCustomerAddress = newCustomerData.address;
-        finalVehicleNo = newCustomerData.vehicleNo;
-        finalTransporter = newCustomerData.transporter;
-        finalGSTIN = newCustomerData.gstin;
-        finalPAN = newCustomerData.pan;
-        
-        // Use new customer bank details
-        var finalBankName = newCustomerData.bankName;
-        var finalBankAccount = newCustomerData.accountNumber;
-        var finalIfsc = newCustomerData.ifscCode;
-
-      } catch (err) {
-        toast.error('Failed to create new customer profile');
-        setIsSaving(false);
-        return;
-      }
-    } else {
-      setIsSaving(true);
-    }
+    const finalCustomerId = selectedCustomer?.id || null;
+    const finalCustomerName = selectedCustomer?.name || 'CASH CUSTOMER';
+    const finalCustomerPhone = selectedCustomer?.phone || '';
+    const finalCustomerAddress = selectedCustomer?.address || '';
+    const finalVehicleNo = selectedCustomer?.vehicleNo || '';
+    const finalTransporter = selectedCustomer?.transporter || '';
+    const finalGSTIN = selectedCustomer?.gstin || '';
+    const finalPAN = selectedCustomer?.pan || '';
+    const finalBankName = selectedCustomer?.bankName || '';
+    const finalBankAccount = selectedCustomer?.accountNumber || '';
+    const finalIfsc = selectedCustomer?.ifscCode || '';
 
     try {
       // Map bill items to have gstPercent = 0 if customer is GST registered
@@ -370,13 +371,6 @@ const NewBill = () => {
         ...item,
         gstPercent: isGstRegistered ? 0 : item.baseGstPercent
       }));
-
-      // Extract bank details for existing customer if applicable
-      if (customerMode === 'existing' && selectedCustomer) {
-        var finalBankName = selectedCustomer.bankName || '';
-        var finalBankAccount = selectedCustomer.accountNumber || '';
-        var finalIfsc = selectedCustomer.ifscCode || '';
-      }
 
       const billData = {
         billNo: billNo ? billNo.trim() : undefined,
@@ -388,9 +382,9 @@ const NewBill = () => {
         transporter: finalTransporter,
         customerGstin: finalGSTIN,
         customerPan: finalPAN,
-        customerBankName: finalBankName || '',
-        customerBankAccount: finalBankAccount || '',
-        customerIfsc: finalIfsc || '',
+        customerBankName: finalBankName,
+        customerBankAccount: finalBankAccount,
+        customerIfsc: finalIfsc,
         items: finalItems,
         subtotal,
         gstAmount,
@@ -431,7 +425,6 @@ const NewBill = () => {
     setNewCustomerData({ name: '', phone: '', email: '', address: '', vehicleNo: '', gstin: '', pan: '', transporter: '', balance: 0, bankName: '', accountNumber: '', ifscCode: '' });
     setFormErrors({});
     setSelectedCustomer(null);
-    setCustomerMode('existing');
     setEwayBillNo('');
     setAckDate('');
     setAckNo('');
@@ -680,145 +673,84 @@ const NewBill = () => {
               )}
             </div>
             
-            <div className="flex p-1.5 bg-primary/50 rounded-xl border border-border/50">
-              {['existing', 'new'].map(mode => (
-                <button
-                  key={mode}
-                  onClick={() => { 
-                    setCustomerMode(mode); 
-                    if (mode === 'new') setSelectedCustomer(null); 
-                    setFormErrors({}); 
-                  }}
-                  className={`flex-1 py-2.5 font-heading font-[700] text-[0.65rem] uppercase tracking-[0.12em] rounded-lg transition-all ${
-                    customerMode === mode ? 'bg-accent text-primary shadow-glow font-black' : 'text-text-muted hover:text-white/45'
-                  }`}
-                >
-                  {mode === 'existing' ? 'Saved Customer' : 'New Customer'}
-                </button>
-              ))}
+            <div className="flex gap-3">
+              <div className="relative flex-1">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted" size={16} />
+                <input
+                  placeholder="Identify by name or phone..."
+                  className="w-full pl-11 pr-4 h-[48px] rounded-xl bg-primary/40 border border-border/50 text-white font-body font-[700] text-[0.85rem] outline-none focus:border-accent focus:shadow-glow transition-all"
+                  value={customerSearch}
+                  onChange={(e) => setCustomerSearch(e.target.value)}
+                />
+              </div>
+              <button
+                type="button"
+                onClick={() => { 
+                  setNewCustomerData({
+                    name: '', phone: '', email: '', address: '', vehicleNo: '', gstin: '', pan: '', transporter: '', balance: 0, bankName: '', accountNumber: '', ifscCode: ''
+                  });
+                  setFormErrors({});
+                  setIsAddCustomerModalOpen(true);
+                }}
+                className="px-4 h-[48px] rounded-xl bg-accent text-primary font-heading font-black text-[0.7rem] uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-accent/90 transition-all shadow-glow"
+              >
+                <UserPlus size={16} /> New
+              </button>
             </div>
 
-            {customerMode === 'existing' && (
-              <div className="space-y-4">
-                <div className="relative">
-                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted" size={16} />
-                  <input
-                    placeholder="Identify by name or phone..."
-                    className="w-full pl-11 pr-4 h-[48px] rounded-xl bg-primary/40 border border-border/50 text-white font-body font-[700] text-[0.85rem] outline-none focus:border-accent focus:shadow-glow transition-all"
-                    value={customerSearch}
-                    onChange={(e) => setCustomerSearch(e.target.value)}
-                  />
-                </div>
-                {customerSearch && (
-                  <div 
-                    className="rounded-xl max-h-48 overflow-y-auto border border-border shadow-glow p-2 space-y-1 custom-scrollbar z-20 relative"
-                    style={{ backgroundColor: '#0A0F1E', opacity: 1 }}
-                  >
-                    {customers
-                      .filter(c => c.name.toLowerCase().includes(customerSearch.toLowerCase()) || c.phone.includes(customerSearch))
-                      .map(c => (
-                        <button
-                          key={c.id}
-                          className="w-full text-left p-4 rounded-lg hover:bg-accent/10 transition-all border-b border-border/20 last:border-none"
-                          onClick={() => { setSelectedCustomer(c); setCustomerSearch(''); }}
-                        >
-                          <p className="font-heading font-black text-[0.8rem] text-white uppercase">{c.name}</p>
-                          <p className="text-[0.6rem] font-mono font-black text-text-muted uppercase tracking-widest mt-1">{c.phone}</p>
-                        </button>
-                      ))}
-                  </div>
-                )}
-                {selectedCustomer && (
-                  <div className="p-6 bg-primary/10 border border-border/30 rounded-2xl space-y-4 group relative">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <p className="font-heading font-black text-[1rem] text-white uppercase">{selectedCustomer.name}</p>
-                        <p className="text-[0.7rem] font-mono font-bold text-text-muted mt-1">{selectedCustomer.phone}</p>
-                      </div>
-                      <button onClick={() => setSelectedCustomer(null)} className="text-text-muted hover:text-accent-red transition-colors">
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                    
-                    <div className="pt-4 border-t border-border/30 space-y-2">
-                      <p className="text-[0.7rem] font-body text-text-muted"><span className="font-bold text-white/60">Address:</span> {selectedCustomer.address || '-'}</p>
-                      <p className="text-[0.7rem] font-body text-text-muted"><span className="font-bold text-white/60">Vehicle:</span> {selectedCustomer.vehicleNo || '-'}</p>
-                      <p className="text-[0.7rem] font-body text-text-muted"><span className="font-bold text-white/60">Transporter:</span> {selectedCustomer.transporter || '-'}</p>
-                      {selectedCustomer.gstin && (
-                        <p className="text-[0.7rem] font-body text-text-muted"><span className="font-bold text-accent-green">GSTIN:</span> {selectedCustomer.gstin}</p>
-                      )}
-                    </div>
-                    <button 
-                      onClick={() => window.open(`/customers/${selectedCustomer.id}`, '_blank')} 
-                      className="w-full mt-2 py-2 border border-border/50 rounded-lg text-text-muted text-[0.65rem] font-heading font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-accent/10 hover:text-white hover:border-accent/30 transition-all"
+            {customerSearch && (
+              <div 
+                className="rounded-xl max-h-48 overflow-y-auto border border-border shadow-glow p-2 space-y-1 custom-scrollbar z-20 relative"
+                style={{ backgroundColor: '#0A0F1E', opacity: 1 }}
+              >
+                {customers
+                  .filter(c => c.name.toLowerCase().includes(customerSearch.toLowerCase()) || c.phone.includes(customerSearch))
+                  .map(c => (
+                    <button
+                      key={c.id}
+                      className="w-full text-left p-4 rounded-lg hover:bg-accent/10 transition-all border-b border-border/20 last:border-none"
+                      onClick={() => { setSelectedCustomer(c); setCustomerSearch(''); }}
                     >
-                      Edit Customer <Edit2 size={12} />
+                      <p className="font-heading font-black text-[0.8rem] text-white uppercase">{c.name}</p>
+                      <p className="text-[0.6rem] font-mono font-black text-text-muted uppercase tracking-widest mt-1">{c.phone}</p>
                     </button>
-                  </div>
-                )}
+                  ))}
               </div>
             )}
 
-            {customerMode === 'new' && (
-              <div className="space-y-4 pt-2">
-                {[
-                  { name: 'name', label: 'CUSTOMER FULL NAME *', type: 'text', errors: formErrors.name },
-                  { name: 'phone', label: 'PHONE NUMBER *', type: 'text', errors: formErrors.phone },
-                  { name: 'address', label: 'ADDRESS *', type: 'text', errors: formErrors.address },
-                  { name: 'vehicleNo', label: 'VEHICLE NUMBER *', type: 'text', errors: formErrors.vehicleNo, upper: true },
-                ].map((fld) => (
-                  <div key={fld.name} className="space-y-1">
-                    <input 
-                      placeholder={fld.label} 
-                      className={`w-full h-[48px] px-5 rounded-xl bg-primary/40 border ${fld.errors ? 'border-accent-red' : 'border-border/50'} text-white font-body font-[700] text-[0.8rem] outline-none focus:border-accent focus:shadow-glow transition-all placeholder:font-[600] placeholder:text-[0.68rem] placeholder:text-text-muted placeholder:uppercase placeholder:tracking-[0.14em] ${fld.upper ? 'uppercase' : ''}`}
-                      value={newCustomerData[fld.name]} 
-                      onChange={e => { 
-                        setNewCustomerData({...newCustomerData, [fld.name]: e.target.value}); 
-                        setFormErrors({...formErrors, [fld.name]: null}); 
-                      }} 
-                    />
-                    {fld.errors && <p className="text-accent-red text-[0.6rem] ml-2 font-mono">{fld.errors}</p>}
+            {selectedCustomer ? (
+              <div className="p-6 bg-primary/10 border border-border/30 rounded-2xl space-y-4 group relative">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <p className="font-heading font-black text-[1rem] text-white uppercase">{selectedCustomer.name}</p>
+                    <p className="text-[0.7rem] font-mono font-bold text-text-muted mt-1">{selectedCustomer.phone || 'No Phone'}</p>
                   </div>
-                ))}
-
-                <div className="space-y-1 pt-4 border-t border-border/30">
-                  <input 
-                    placeholder="GSTIN (OPTIONAL)" 
-                    className={`w-full h-[48px] px-5 rounded-xl bg-primary/40 border ${formErrors.gstin ? 'border-accent-red' : 'border-border/50'} text-white font-mono font-[700] text-[0.8rem] outline-none focus:border-accent focus:shadow-glow uppercase transition-all placeholder:font-[600] placeholder:text-[0.68rem] placeholder:text-text-muted placeholder:uppercase placeholder:tracking-[0.14em]`}
-                    value={newCustomerData.gstin} 
-                    onChange={handleGSTINChange} 
-                  />
-                  {formErrors.gstin && <p className="text-accent-red text-[0.6rem] ml-2 font-mono">{formErrors.gstin}</p>}
+                  <button onClick={() => setSelectedCustomer(null)} className="text-text-muted hover:text-accent-red transition-colors">
+                    <Trash2 size={16} />
+                  </button>
                 </div>
-
-                <div className="space-y-1">
-                  <input 
-                    placeholder={`PAN NUMBER ${newCustomerData.gstin ? '*' : '(OPTIONAL)'}`}
-                    className={`w-full h-[48px] px-5 rounded-xl bg-primary/40 border ${formErrors.pan ? 'border-accent-red' : 'border-border/50'} text-white font-mono font-[700] text-[0.8rem] outline-none focus:border-accent focus:shadow-glow uppercase transition-all placeholder:font-[600] placeholder:text-[0.68rem] placeholder:text-text-muted placeholder:uppercase placeholder:tracking-[0.14em]`}
-                    value={newCustomerData.pan} 
-                    onChange={e => { 
-                      setNewCustomerData({...newCustomerData, pan: e.target.value.toUpperCase()}); 
-                      setFormErrors({...formErrors, pan: null}); 
-                    }} 
-                  />
-                  {formErrors.pan && <p className="text-accent-red text-[0.6rem] ml-2 font-mono">{formErrors.pan}</p>}
+                
+                <div className="pt-4 border-t border-border/30 space-y-2">
+                  <p className="text-[0.7rem] font-body text-text-muted"><span className="font-bold text-white/60">Address:</span> {selectedCustomer.address || '-'}</p>
+                  <p className="text-[0.7rem] font-body text-text-muted"><span className="font-bold text-white/60">Vehicle:</span> {selectedCustomer.vehicleNo || '-'}</p>
+                  <p className="text-[0.7rem] font-body text-text-muted"><span className="font-bold text-white/60">Transporter:</span> {selectedCustomer.transporter || '-'}</p>
+                  {selectedCustomer.gstin && (
+                    <p className="text-[0.7rem] font-body text-text-muted"><span className="font-bold text-accent-green">GSTIN:</span> {selectedCustomer.gstin}</p>
+                  )}
                 </div>
-
-                {[
-                  { name: 'transporter', label: 'TRANSPORTER (OPTIONAL)' },
-                  { name: 'bankName', label: 'BANK NAME (OPTIONAL)' },
-                  { name: 'accountNumber', label: 'ACCOUNT NUMBER (OPTIONAL)', number: true },
-                  { name: 'ifscCode', label: 'IFSC CODE (OPTIONAL)', upper: true }
-                ].map(fld => (
-                  <div key={fld.name} className={`space-y-1 ${fld.name === 'transporter' || fld.name === 'bankName' ? 'pt-4 border-t border-border/30' : ''}`}>
-                    <input 
-                      placeholder={fld.label} 
-                      className={`w-full h-[48px] px-5 rounded-xl bg-primary/40 border border-border/50 text-white ${fld.number || fld.upper ? 'font-mono' : 'font-body'} font-[700] text-[0.8rem] outline-none focus:border-accent focus:shadow-glow transition-all placeholder:font-[600] placeholder:text-[0.68rem] placeholder:text-text-muted placeholder:uppercase placeholder:tracking-[0.14em] ${fld.upper ? 'uppercase' : ''}`}
-                      value={newCustomerData[fld.name]} 
-                      onChange={e => setNewCustomerData({...newCustomerData, [fld.name]: fld.upper ? e.target.value.toUpperCase() : e.target.value})} 
-                    />
-                  </div>
-                ))}
+                {selectedCustomer.id && (
+                  <button 
+                    onClick={() => window.open(`/customers/${selectedCustomer.id}`, '_blank')} 
+                    className="w-full mt-2 py-2 border border-border/50 rounded-lg text-text-muted text-[0.65rem] font-heading font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-accent/10 hover:text-white hover:border-accent/30 transition-all"
+                  >
+                    Edit Customer <Edit2 size={12} />
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div className="p-6 bg-primary/5 border border-border/20 border-dashed rounded-2xl text-center">
+                <p className="text-[0.72rem] font-heading font-black uppercase tracking-wider text-text-muted">CASH CUSTOMER</p>
+                <p className="text-[0.6rem] font-body text-text-muted/60 mt-1">Default guest transaction mode. All receipt parameters optional.</p>
               </div>
             )}
           </div>
@@ -945,6 +877,178 @@ const NewBill = () => {
         subtitle="This will reset invoice numbering back to 0001. Next bill will be #0001."
         confirmLabel="Reset"
       />
+
+      <Modal
+        isOpen={isAddCustomerModalOpen}
+        onClose={() => setIsAddCustomerModalOpen(false)}
+        title="Add New Customer"
+        maxWidth="800px"
+      >
+        <form className="space-y-6 p-2" onSubmit={handleCreateCustomer}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <label className="font-body font-[600] text-[0.65rem] text-white/[0.46] uppercase tracking-[0.12em] ml-1">Customer Full Name (Optional)</label>
+              <input 
+                type="text"
+                placeholder="e.g. John Doe"
+                className={`w-full h-[52px] px-5 rounded-xl text-[0.875rem] font-body font-[400] bg-[#080C14] border ${formErrors.name ? 'border-red-500' : 'border-white/10'} text-white outline-none focus:border-[#FF6A00] transition-all admin-input-focus`}
+                value={newCustomerData.name} 
+                onChange={e => { setNewCustomerData({...newCustomerData, name: e.target.value}); setFormErrors({...formErrors, name: null}); }} 
+              />
+              {formErrors.name && <p className="text-red-500 text-[0.65rem] ml-1">{formErrors.name}</p>}
+            </div>
+            <div className="space-y-2">
+              <label className="font-body font-[600] text-[0.65rem] text-white/[0.46] uppercase tracking-[0.12em] ml-1">Phone Number (Optional)</label>
+              <input 
+                type="text"
+                placeholder="e.g. 9876543210"
+                className={`w-full h-[52px] px-5 rounded-xl text-[0.875rem] font-body font-[400] bg-[#080C14] border ${formErrors.phone ? 'border-red-500' : 'border-white/10'} text-white outline-none focus:border-[#FF6A00] transition-all admin-input-focus`}
+                value={newCustomerData.phone} 
+                onChange={e => { setNewCustomerData({...newCustomerData, phone: e.target.value}); setFormErrors({...formErrors, phone: null}); }} 
+              />
+              {formErrors.phone && <p className="text-red-500 text-[0.65rem] ml-1">{formErrors.phone}</p>}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <label className="font-body font-[600] text-[0.65rem] text-white/[0.46] uppercase tracking-[0.12em] ml-1">Email Address (Optional)</label>
+              <input 
+                type="email"
+                placeholder="e.g. john@example.com"
+                className="w-full h-[52px] px-5 rounded-xl text-[0.875rem] font-body font-[400] bg-[#080C14] border border-white/10 text-white outline-none focus:border-[#FF6A00] transition-all admin-input-focus"
+                value={newCustomerData.email} 
+                onChange={e => setNewCustomerData({...newCustomerData, email: e.target.value})}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="font-body font-[600] text-[0.65rem] text-white/[0.46] uppercase tracking-[0.12em] ml-1">Vehicle Number (Optional)</label>
+              <input 
+                type="text"
+                className={`w-full h-[52px] px-5 rounded-xl text-[0.875rem] font-body font-[400] uppercase bg-[#080C14] border ${formErrors.vehicleNo ? 'border-red-500' : 'border-white/10'} text-white outline-none focus:border-[#FF6B00] transition-all admin-input-focus`}
+                value={newCustomerData.vehicleNo} 
+                onChange={e => { setNewCustomerData({...newCustomerData, vehicleNo: e.target.value}); setFormErrors({...formErrors, vehicleNo: null}); }} 
+                placeholder="e.g. GJ-18-AB-1234"
+              />
+              {formErrors.vehicleNo && <p className="text-red-500 text-[0.65rem] ml-1">{formErrors.vehicleNo}</p>}
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="font-body font-[600] text-[0.65rem] text-white/[0.46] uppercase tracking-[0.12em] ml-1">Address (Optional)</label>
+            <textarea 
+              className={`w-full h-[80px] p-5 rounded-xl text-[0.875rem] font-body font-[400] bg-[#080C14] border ${formErrors.address ? 'border-red-500' : 'border-white/10'} text-white outline-none focus:border-[#FF6A00] transition-all admin-input-focus resize-none`}
+              value={newCustomerData.address} 
+              onChange={e => { setNewCustomerData({...newCustomerData, address: e.target.value}); setFormErrors({...formErrors, address: null}); }} 
+              placeholder="Enter full address..."
+            />
+            {formErrors.address && <p className="text-red-500 text-[0.65rem] ml-1">{formErrors.address}</p>}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-5 rounded-xl bg-white/[0.02] border border-white/5">
+            <div className="space-y-2">
+              <label className="font-body font-[600] text-[0.65rem] text-white/[0.46] uppercase tracking-[0.12em] ml-1">GSTIN / GST Number (Optional)</label>
+              <input 
+                type="text"
+                className={`w-full h-[52px] px-5 rounded-xl text-[0.875rem] font-body font-[400] uppercase bg-[#080C14] border ${formErrors.gstin ? 'border-red-500' : 'border-white/10'} text-white outline-none focus:border-[#FF6A00] transition-all admin-input-focus`}
+                value={newCustomerData.gstin} 
+                onChange={handleGSTINChange} 
+                placeholder="e.g. 24ABCDE1234F1Z5"
+              />
+              {formErrors.gstin ? (
+                <p className="text-red-500 text-[0.65rem] ml-1">{formErrors.gstin}</p>
+              ) : (
+                <p className="text-white/30 text-[0.65rem] ml-1 italic">Leave blank if customer does not have GST</p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <label className="font-body font-[600] text-[0.65rem] text-white/[0.46] uppercase tracking-[0.12em] ml-1">PAN Number (Optional)</label>
+              <input 
+                type="text"
+                className={`w-full h-[52px] px-5 rounded-xl text-[0.875rem] font-body font-[400] uppercase bg-[#080C14] border ${formErrors.pan ? 'border-red-500' : 'border-white/10'} text-white outline-none focus:border-[#FF6A00] transition-all admin-input-focus`}
+                value={newCustomerData.pan} 
+                onChange={e => { setNewCustomerData({...newCustomerData, pan: e.target.value.toUpperCase()}); setFormErrors({...formErrors, pan: null}); }} 
+                placeholder="e.g. ABCDE1234F"
+              />
+              {formErrors.pan && <p className="text-red-500 text-[0.65rem] ml-1">{formErrors.pan}</p>}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <label className="font-body font-[600] text-[0.65rem] text-white/[0.46] uppercase tracking-[0.12em] ml-1">Opening Balance (₹) (Optional)</label>
+              <div className="relative">
+                <span className="absolute left-5 top-1/2 -translate-y-1/2 text-white/20">₹</span>
+                <input 
+                  type="number"
+                  className="w-full h-[52px] pl-9 pr-5 rounded-xl text-[0.875rem] font-body font-[400] bg-[#080C14] border border-white/10 text-white outline-none focus:border-[#FF6A00] transition-all admin-input-focus"
+                  value={newCustomerData.balance} 
+                  onChange={e => setNewCustomerData({...newCustomerData, balance: parseFloat(e.target.value) || 0})}
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <label className="font-body font-[600] text-[0.65rem] text-white/[0.46] uppercase tracking-[0.12em] ml-1">Transporter (Optional)</label>
+              <input 
+                type="text"
+                placeholder="e.g. VRL Logistics"
+                className="w-full h-[52px] px-5 rounded-xl text-[0.875rem] font-body font-[400] bg-[#080C14] border border-white/10 text-white outline-none focus:border-[#FF6A00] transition-all admin-input-focus"
+                value={newCustomerData.transporter} 
+                onChange={e => setNewCustomerData({...newCustomerData, transporter: e.target.value})}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-5 rounded-xl bg-white/[0.02] border border-white/5">
+            <div className="space-y-2">
+              <label className="font-body font-[600] text-[0.65rem] text-white/[0.46] uppercase tracking-[0.12em] ml-1">Bank Name (Optional)</label>
+              <input 
+                type="text"
+                placeholder="e.g. SBI"
+                className="w-full h-[52px] px-5 rounded-xl text-[0.875rem] font-body font-[400] bg-[#080C14] border border-white/10 text-white outline-none focus:border-[#FF6A00] transition-all admin-input-focus"
+                value={newCustomerData.bankName} 
+                onChange={e => setNewCustomerData({...newCustomerData, bankName: e.target.value})}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="font-body font-[600] text-[0.65rem] text-white/[0.46] uppercase tracking-[0.12em] ml-1">Account Number (Optional)</label>
+              <input 
+                type="text"
+                placeholder="e.g. 1234567890"
+                className="w-full h-[52px] px-5 rounded-xl text-[0.875rem] font-body font-[400] bg-[#080C14] border border-white/10 text-white outline-none focus:border-[#FF6A00] transition-all admin-input-focus"
+                value={newCustomerData.accountNumber} 
+                onChange={e => setNewCustomerData({...newCustomerData, accountNumber: e.target.value})}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="font-body font-[600] text-[0.65rem] text-white/[0.46] uppercase tracking-[0.12em] ml-1">IFSC Code (Optional)</label>
+              <input 
+                type="text"
+                placeholder="e.g. SBIN0001234"
+                className="w-full h-[52px] px-5 rounded-xl text-[0.875rem] font-body font-[400] uppercase bg-[#080C14] border border-white/10 text-white outline-none focus:border-[#FF6A00] transition-all admin-input-focus"
+                value={newCustomerData.ifscCode} 
+                onChange={e => setNewCustomerData({...newCustomerData, ifscCode: e.target.value.toUpperCase()})}
+              />
+            </div>
+          </div>
+
+          <div className="pt-6 flex gap-4">
+            <button 
+              type="button" 
+              onClick={() => setIsAddCustomerModalOpen(false)} 
+              className="flex-1 h-[56px] rounded-xl bg-transparent border border-white/20 text-[0.72rem] font-body font-[700] uppercase tracking-[0.12em] text-white hover:bg-white/5 transition-all"
+            >
+              Cancel
+            </button>
+            <button 
+              type="submit" 
+              className="flex-1 h-[56px] rounded-xl bg-[#FF6A00] text-[0.72rem] font-body font-[700] uppercase tracking-[0.12em] text-white shadow-lg shadow-[#FF6A0033] hover:translate-y-[-2px] transition-all admin-btn-hover"
+            >
+              Create and Select
+            </button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 };
