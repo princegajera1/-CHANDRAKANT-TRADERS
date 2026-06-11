@@ -267,16 +267,16 @@ const NewBill = () => {
   const subtotal = billItems.reduce((acc, item) => acc + item.itemTotal, 0);
   const calculatedDiscount = isGstRegistered ? subtotal * 0.18 : 0;
   const calculatedGrandTotal = Math.round(subtotal - calculatedDiscount);
-  const grandTotal = overrideGrandTotal !== null ? overrideGrandTotal : calculatedGrandTotal;
+  const grandTotal = overrideGrandTotal !== null ? (parseFloat(overrideGrandTotal) || 0) : calculatedGrandTotal;
   const discountAmount = overrideGrandTotal !== null ? (subtotal - grandTotal) : calculatedDiscount;
   const gstAmount = isGstRegistered ? subtotal * 0.18 : 0;
   const roundOff = overrideGrandTotal !== null ? 0 : (calculatedGrandTotal - (subtotal - calculatedDiscount));
-  const balanceDue = Math.max(0, grandTotal - amountPaid);
+  const balanceDue = Math.max(0, grandTotal - (parseFloat(amountPaid) || 0));
 
   const prevGrandTotalRef = useRef(grandTotal);
   useEffect(() => {
     if (paymentMode !== 'Credit') {
-      if (amountPaid === prevGrandTotalRef.current || amountPaid === 0) {
+      if (amountPaid === prevGrandTotalRef.current) {
         setAmountPaid(grandTotal);
       }
     }
@@ -391,7 +391,7 @@ const NewBill = () => {
         discountAmount: Number(discountAmount),
         roundOff: Number(roundOff),
         grandTotal,
-        amountPaid: paymentMode === 'Credit' ? 0 : (amountPaid || grandTotal),
+        amountPaid: paymentMode === 'Credit' ? 0 : (amountPaid === '' ? grandTotal : (parseFloat(amountPaid) || 0)),
         balanceDue: paymentMode === 'Credit' ? grandTotal : balanceDue,
         paymentMode,
         ewayBillNo,
@@ -791,14 +791,15 @@ const NewBill = () => {
                     <span className="absolute left-3 font-mono font-[700] text-[1.2rem] text-accent">₹</span>
                     <input
                       type="number"
+                      placeholder={calculatedGrandTotal.toString()}
                       className="w-36 h-[40px] pl-8 pr-3 text-right rounded-lg bg-primary/40 border border-border/50 text-accent font-mono font-[700] text-[1.2rem] outline-none focus:border-accent focus:shadow-glow transition-all drop-shadow-[0_0_8px_rgba(0,212,255,0.3)]"
-                      value={overrideGrandTotal !== null ? overrideGrandTotal : grandTotal}
+                      value={overrideGrandTotal !== null ? overrideGrandTotal : ''}
                       onChange={(e) => {
                         const val = e.target.value;
                         if (val === '') {
                           setOverrideGrandTotal(null);
                         } else {
-                          setOverrideGrandTotal(parseFloat(val) || 0);
+                          setOverrideGrandTotal(val);
                         }
                       }}
                     />
@@ -845,7 +846,7 @@ const NewBill = () => {
                       placeholder={grandTotal.toString()}
                       className="w-full h-[56px] pl-5 pr-14 rounded-xl bg-primary/40 border border-border/50 text-white text-[1.2rem] font-black font-mono outline-none focus:border-accent focus:shadow-glow transition-all"
                       value={amountPaid}
-                      onChange={(e) => setAmountPaid(parseFloat(e.target.value) || 0)}
+                      onChange={(e) => setAmountPaid(e.target.value)}
                     />
                     <Wallet className="absolute right-5 top-1/2 -translate-y-1/2 text-text-muted" size={20} />
                   </div>
