@@ -48,6 +48,7 @@ const NewBill = () => {
   const [ackNo, setAckNo] = useState('');
   const [billNo, setBillNo] = useState('');
   const [serialNo, setSerialNo] = useState('');
+  const [overrideGrandTotal, setOverrideGrandTotal] = useState(null);
   const [loadingCounter, setLoadingCounter] = useState(true);
   const [isResetCounterModalOpen, setIsResetCounterModalOpen] = useState(false);
   
@@ -158,6 +159,15 @@ const NewBill = () => {
       setPaymentMode(dup.paymentMode || 'Cash');
       setEwayBillNo(dup.ewayBillNo || '');
       setSerialNo(dup.serialNo || '');
+      
+      const dupSubtotal = dup.items ? dup.items.reduce((acc, item) => acc + item.itemTotal, 0) : 0;
+      const dupIsGst = dup.customerGstin && dup.customerGstin !== '';
+      const dupCalculatedGT = Math.round(dupIsGst ? dupSubtotal * 0.82 : dupSubtotal);
+      if (dup.grandTotal && dup.grandTotal !== dupCalculatedGT) {
+        setOverrideGrandTotal(dup.grandTotal);
+      } else {
+        setOverrideGrandTotal(null);
+      }
 
       // Reset location state so refreshing does not prefill again
       window.history.replaceState({}, document.title);
@@ -257,11 +267,12 @@ const NewBill = () => {
   };
 
   const subtotal = billItems.reduce((acc, item) => acc + item.itemTotal, 0);
-  const discountAmount = isGstRegistered ? subtotal * 0.18 : 0;
+  const calculatedDiscount = isGstRegistered ? subtotal * 0.18 : 0;
+  const calculatedGrandTotal = Math.round(subtotal - calculatedDiscount);
+  const grandTotal = overrideGrandTotal !== null ? overrideGrandTotal : calculatedGrandTotal;
+  const discountAmount = overrideGrandTotal !== null ? (subtotal - grandTotal) : calculatedDiscount;
   const gstAmount = isGstRegistered ? subtotal * 0.18 : 0;
-  const rawGrandTotal = subtotal - discountAmount;
-  const grandTotal = Math.round(rawGrandTotal);
-  const roundOff = grandTotal - rawGrandTotal;
+  const roundOff = overrideGrandTotal !== null ? 0 : (calculatedGrandTotal - (subtotal - calculatedDiscount));
   const balanceDue = Math.max(0, grandTotal - amountPaid);
 
   const handleGSTINChange = (e) => {
@@ -374,7 +385,7 @@ const NewBill = () => {
         subtotal,
         gstAmount,
         discountAmount: Number(discountAmount),
-        roundOff,
+        roundOff: Number(roundOff),
         grandTotal,
         amountPaid: paymentMode === 'Credit' ? 0 : (amountPaid || grandTotal),
         balanceDue: paymentMode === 'Credit' ? grandTotal : balanceDue,
@@ -415,6 +426,7 @@ const NewBill = () => {
     setAckDate('');
     setAckNo('');
     setSerialNo('');
+    setOverrideGrandTotal(null);
     setLoadingCounter(true);
     try {
       const nextNo = await getNextInvoiceNumber();
@@ -832,7 +844,33 @@ const NewBill = () => {
               </div>
               <div className="flex justify-between items-center">
                 <span className="font-heading font-[700] text-[0.8rem] text-white/[0.70] uppercase">GRAND TOTAL</span>
-                <span className="font-mono font-[700] text-[1.4rem] text-accent drop-shadow-[0_0_8px_rgba(0,212,255,0.3)]">₹{grandTotal.toLocaleString()}</span>
+                <div className="flex flex-col items-end gap-1">
+                  <div className="relative flex items-center">
+                    <span className="absolute left-3 font-mono font-[700] text-[1.2rem] text-accent">₹</span>
+                    <input
+                      type="number"
+                      className="w-36 h-[40px] pl-8 pr-3 text-right rounded-lg bg-primary/40 border border-border/50 text-accent font-mono font-[700] text-[1.2rem] outline-none focus:border-accent focus:shadow-glow transition-all drop-shadow-[0_0_8px_rgba(0,212,255,0.3)]"
+                      value={overrideGrandTotal !== null ? overrideGrandTotal : grandTotal}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === '') {
+                          setOverrideGrandTotal(null);
+                        } else {
+                          setOverrideGrandTotal(parseFloat(val) || 0);
+                        }
+                      }}
+                    />
+                  </div>
+                  {overrideGrandTotal !== null && (
+                    <button
+                      type="button"
+                      onClick={() => setOverrideGrandTotal(null)}
+                      className="text-[0.6rem] font-heading font-bold text-accent hover:text-accent/80 transition-colors bg-transparent border-none outline-none cursor-pointer uppercase tracking-wider mt-1"
+                    >
+                      Reset to Auto
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
 
