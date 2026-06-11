@@ -187,3 +187,52 @@ export const cancelBill = async (billId) => {
     transaction.update(billRef, { status: 'cancelled' });
   });
 };
+
+export const updateBill = async (billId, newGrandTotal, newAmountPaid) => {
+  const billRef = doc(db, 'bills', billId);
+  
+  return await runTransaction(db, async (transaction) => {
+    // --- 1. ALL READS FIRST ---
+    const billSnap = await transaction.get(billRef);
+    if (!billSnap.exists()) throw new Error("Bill not found");
+    
+    const billData = billSnap.data();
+    if (billData.status === 'cancelled') throw new Error("Cannot edit a cancelled bill");
+    
+    let customerSnap = null;
+    let customerRef = null;
+    if (billData.customerId) {
+      customerRef = doc(db, 'customers', billData.customerId);
+      customerSnap = await transaction.get(customerRef);
+    }
+    
+    // --- 2. CALCULATIONS ---
+    const subtotal = billData.subtotal || 0;
+    const discountAmount = subtotal - newGrandTotal;
+    const newBalanceDue = Math.max(0, newGrandTotal - newAmountPaid);
+    
+    const oldGrandTotal = billData.grandTotal || 0;
+    const oldBalanceDue = billData.balanceDue || 0;
+    
+    const diffGrandTotal = newGrandTotal - oldGrandTotal;
+    const diffBalanceDue = newBalanceDue - oldBalanceDue;
+    
+    // --- 3. ALL WRITES AFTER ---
+    // Update customer balances if customerId is present
+    if (customerSnap && customerSnap.exists()) {
+      transaction.update(customerRef, {
+        balance: (customerSnap.data().balance || 0) + diffBalanceDue,
+        totalPurchased: (customerSnap.data().totalPurchased || 0) + diffGrandTotal
+      });
+    }
+    
+    // Update the bill document
+    transaction.update(billRef, {
+      grandTotal: newGrandTotal,
+      amountPaid: newAmountPaid,
+      balanceDue: newBalanceDue,
+      discountAmount: Number(discountAmount),
+      roundOff: 0
+    });
+  });
+};

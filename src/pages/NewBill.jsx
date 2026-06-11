@@ -275,6 +275,16 @@ const NewBill = () => {
   const roundOff = overrideGrandTotal !== null ? 0 : (calculatedGrandTotal - (subtotal - calculatedDiscount));
   const balanceDue = Math.max(0, grandTotal - amountPaid);
 
+  const prevGrandTotalRef = useRef(grandTotal);
+  useEffect(() => {
+    if (paymentMode !== 'Credit') {
+      if (amountPaid === prevGrandTotalRef.current || amountPaid === 0) {
+        setAmountPaid(grandTotal);
+      }
+    }
+    prevGrandTotalRef.current = grandTotal;
+  }, [grandTotal, paymentMode, amountPaid]);
+
   const handleGSTINChange = (e) => {
     const val = e.target.value.toUpperCase();
     const newFormData = { ...newCustomerData, gstin: val };

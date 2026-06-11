@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useBills } from '../hooks/useBills';
-import { Printer, Eye, Link as LinkIcon, Download, Search, Calendar, Trash2, Share2, AlertTriangle, Clock, Copy, PlusSquare } from 'lucide-react';
+import { Printer, Eye, Link as LinkIcon, Download, Search, Calendar, Trash2, Share2, AlertTriangle, Clock, Copy, PlusSquare, Edit2 } from 'lucide-react';
 import { AnimatedNumber } from '../components/ui/AnimatedNumber';
-import { cancelBill } from '../firebase/bills';
+import { cancelBill, updateBill } from '../firebase/bills';
 import { moveToTrash } from '../firebase/trash';
 import { generateBillPDF } from '../utils/generatePDF';
 import { shareOnWhatsApp } from '../utils/whatsapp';
@@ -28,6 +28,40 @@ const Bills = () => {
   const [shopSettings, setShopSettings] = useState(null);
   const [isDeleting, setIsDeleting] = useState(null);
   const [sharingBillId, setSharingBillId] = useState(null);
+  const [editingBill, setEditingBill] = useState(null);
+  const [editGrandTotal, setEditGrandTotal] = useState('');
+  const [editAmountPaid, setEditAmountPaid] = useState('');
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
+
+  const handleEditSave = async () => {
+    if (isReadOnly) {
+      toast.error('Read-only access — authorization required');
+      return;
+    }
+    const newGrandTotal = parseFloat(editGrandTotal);
+    const newAmountPaid = parseFloat(editAmountPaid);
+    
+    if (isNaN(newGrandTotal) || newGrandTotal < 0) {
+      toast.error('Please enter a valid grand total');
+      return;
+    }
+    if (isNaN(newAmountPaid) || newAmountPaid < 0) {
+      toast.error('Please enter a valid amount paid');
+      return;
+    }
+    
+    setIsSavingEdit(true);
+    try {
+      await updateBill(editingBill.id, newGrandTotal, newAmountPaid);
+      toast.success('Bill updated successfully');
+      setEditingBill(null);
+    } catch (err) {
+      console.error(err);
+      toast.error(err.message || 'Failed to update bill');
+    } finally {
+      setIsSavingEdit(false);
+    }
+  };
 
   const handleResetArchives = async () => {
     if (isReadOnly) return toast.error('Access Denied: Read-Only Mode');
@@ -340,6 +374,20 @@ const Bills = () => {
                           <Share2 size={18} />
                         )}
                       </button>
+                      {bill.status !== 'cancelled' && (
+                        <button 
+                          onClick={(e) => { 
+                            e.stopPropagation(); 
+                            setEditingBill(bill); 
+                            setEditGrandTotal(bill.grandTotal); 
+                            setEditAmountPaid(bill.amountPaid); 
+                          }} 
+                          className="w-10 h-10 flex items-center justify-center rounded-xl bg-primary/40 border border-border/50 text-text-muted hover:text-accent hover:border-accent/40 hover:bg-accent/5 transition-all" 
+                          title="Edit Bill"
+                        >
+                          <Edit2 size={18} />
+                        </button>
+                      )}
                       <button onClick={(e) => { e.stopPropagation(); setIsDeleting(bill); }} className="w-10 h-10 flex items-center justify-center rounded-xl bg-primary/40 border border-border/50 text-text-muted hover:text-accent-red hover:border-accent-red/40 hover:bg-accent-red/5 transition-all" title="Void & Revert stock"><Trash2 size={18} /></button>
                     </div>
                   </td>
@@ -445,6 +493,93 @@ const Bills = () => {
       </Modal>
 
       <PrintInvoice bill={selectedBill} shopSettings={shopSettings} safeFormatDate={safeFormatDate} numberToWords={numberToWords} />
+
+      <Modal
+        isOpen={!!editingBill}
+        onClose={() => setEditingBill(null)}
+        title={`EDIT BILL #${editingBill?.billNo}`}
+        maxWidth="500px"
+        footer={
+          <div className="flex gap-4 w-full">
+            <button 
+              type="button"
+              onClick={() => setEditingBill(null)} 
+              disabled={isSavingEdit}
+              className="flex-1 py-4 rounded-xl bg-transparent border border-border/50 text-[0.75rem] font-heading font-black uppercase tracking-widest text-text-muted hover:text-white hover:bg-white/5 transition-all disabled:opacity-50"
+            >
+              Cancel
+            </button>
+            <button 
+              type="button"
+              onClick={handleEditSave} 
+              disabled={isSavingEdit}
+              className="flex-1 py-4 rounded-xl bg-accent text-[0.75rem] font-heading font-black uppercase tracking-widest text-primary shadow-glow hover:bg-accent/80 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              {isSavingEdit ? (
+                <div className="w-4 h-4 border-2 border-primary/30 border-t-primary rounded-full animate-spin"></div>
+              ) : 'Save Changes'}
+            </button>
+          </div>
+        }
+      >
+        {editingBill && (
+          <div className="space-y-6 p-1">
+            <div className="p-4 rounded-xl bg-primary/40 border border-border/50 space-y-2">
+              <div className="flex justify-between">
+                <span className="text-[0.65rem] font-heading font-black text-text-muted uppercase tracking-widest">Client</span>
+                <span className="text-[0.8rem] font-heading font-black text-white uppercase">{editingBill.customerName}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-[0.65rem] font-heading font-black text-text-muted uppercase tracking-widest">Subtotal</span>
+                <span className="text-[0.85rem] font-mono font-bold text-white/70">₹{editingBill.subtotal?.toLocaleString('en-IN')}</span>
+              </div>
+              {editingBill.discountAmount > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-[0.65rem] font-heading font-black text-accent-gold uppercase tracking-widest">Original Discount</span>
+                  <span className="text-[0.85rem] font-mono font-bold text-accent-gold">₹{editingBill.discountAmount?.toLocaleString('en-IN')}</span>
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-[0.65rem] font-heading font-black uppercase tracking-widest text-text-muted">Grand Total</label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    value={editGrandTotal}
+                    onChange={(e) => setEditGrandTotal(e.target.value)}
+                    className="w-full h-[56px] pl-5 pr-6 rounded-xl bg-primary/40 border border-border/50 text-white text-[1.1rem] font-black font-mono outline-none focus:border-accent focus:shadow-glow transition-all"
+                    placeholder="Enter Grand Total"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[0.65rem] font-heading font-black uppercase tracking-widest text-text-muted">Settlement Amount (Amount Paid)</label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    value={editAmountPaid}
+                    onChange={(e) => setEditAmountPaid(e.target.value)}
+                    className="w-full h-[56px] pl-5 pr-6 rounded-xl bg-primary/40 border border-border/50 text-white text-[1.1rem] font-black font-mono outline-none focus:border-accent focus:shadow-glow transition-all"
+                    placeholder="Enter Settlement Amount"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-between items-center p-4 rounded-xl bg-accent/5 border border-accent/20">
+                <span className="text-[0.7rem] font-heading font-black text-text-muted uppercase tracking-widest">Calculated Balance Due</span>
+                <span className={`text-[0.95rem] font-mono font-black uppercase tracking-widest px-3 py-1 rounded-lg ${
+                  (parseFloat(editGrandTotal) - parseFloat(editAmountPaid)) > 0 ? 'bg-accent-red/10 text-accent-red border border-accent-red/20' : 'bg-accent-green/10 text-accent-green border border-accent-green/20'
+                }`}>
+                  ₹{Math.max(0, (parseFloat(editGrandTotal) || 0) - (parseFloat(editAmountPaid) || 0)).toLocaleString('en-IN')}
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
+      </Modal>
 
       <Modal isOpen={!!isDeleting} onClose={() => setIsDeleting(null)} title={`VOID BILL #${isDeleting?.billNo}?`}>
         <div className="p-4 text-center space-y-6">
