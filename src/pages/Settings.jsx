@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { db, auth } from '../firebase/config';
 import { toast } from 'react-hot-toast';
 import { doc, getDoc, updateDoc, setDoc, collection, onSnapshot, query, orderBy, limit, where, addDoc, serverTimestamp, deleteDoc, getDocs } from 'firebase/firestore';
@@ -19,7 +20,9 @@ const Settings = () => {
   const { isSuperAdmin, isDemo, isReadOnly, user: currentUser } = useAuthContext();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState('shop');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = searchParams.get('tab') || 'shop';
+  const setActiveTab = (tabId) => setSearchParams({ tab: tabId });
   const [admins, setAdmins] = useState([]);
   const [logs, setLogs] = useState([]);
   const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);

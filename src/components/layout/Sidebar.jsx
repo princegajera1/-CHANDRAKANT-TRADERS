@@ -62,13 +62,13 @@ export const Sidebar = ({ isOpen, onClose, isCollapsed, setIsCollapsed }) => {
   ];
 
   const gridNavigation = [
-    { icon: Home, label: 'Shop Profile', path: '/settings', roles: ['owner', 'superadmin', 'admin', 'manager'] },
-    { icon: Globe, label: 'Digital Matrix', path: '/matrix', roles: ['owner', 'superadmin', 'admin', 'manager'] },
-    { icon: Bell, label: 'Alert Protocols', path: '/alerts', roles: ['owner', 'superadmin', 'admin', 'manager'] },
-    { icon: Shield, label: 'Security Grid', path: '/security', roles: ['owner', 'superadmin', 'admin', 'manager'] },
+    { icon: Home, label: 'Shop Profile', path: '/settings?tab=shop', roles: ['owner', 'superadmin', 'admin', 'manager'] },
+    { icon: Globe, label: 'Digital Matrix', path: '/settings?tab=digital', roles: ['owner', 'superadmin', 'admin', 'manager'] },
+    { icon: Bell, label: 'Alert Protocols', path: '/settings?tab=alerts', roles: ['owner', 'superadmin', 'admin', 'manager'] },
+    { icon: Shield, label: 'Security Grid', path: '/settings?tab=security', roles: ['owner', 'superadmin', 'admin', 'manager'] },
     { icon: ShieldCheck, label: 'Admin Network', path: '/users', roles: ['owner', 'superadmin'] },
     { icon: History, label: 'Activity Logs', path: '/logs', roles: ['owner', 'superadmin', 'admin'] },
-    { icon: Database, label: 'Data Registry', path: '/registry', roles: ['owner', 'superadmin', 'admin'] },
+    { icon: Database, label: 'Data Registry', path: '/settings?tab=data', roles: ['owner', 'superadmin', 'admin'] },
   ];
 
   const hasAccess = (item) => {
@@ -183,7 +183,10 @@ export const Sidebar = ({ isOpen, onClose, isCollapsed, setIsCollapsed }) => {
                     {gridNavigation
                       .filter(hasAccess)
                       .map((item) => {
-                        const isActive = location.pathname === item.path;
+                        const isActive = location.pathname === item.path.split('?')[0] && 
+                          (item.path.includes('?tab=') 
+                            ? new URLSearchParams(location.search).get('tab') === item.path.split('?tab=')[1] 
+                            : (!new URLSearchParams(location.search).get('tab') || new URLSearchParams(location.search).get('tab') === 'shop'));
                         return (
                           <NavLink
                             key={item.path}
