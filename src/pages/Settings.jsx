@@ -390,42 +390,88 @@ const Settings = () => {
   const executeSystemWipe = async () => {
     setSaving(true);
     try {
-      // 1. Delete bills
+      const deletedAt = new Date().toISOString();
+
+      // 1. Soft-delete bills (move to Recycle Bin)
       const billsSnap = await getDocs(collection(db, 'bills'));
-      await Promise.all(billsSnap.docs.map(d => deleteDoc(doc(db, 'bills', d.id))));
+      await Promise.all(billsSnap.docs.map(d => {
+        if (d.data().isDeleted !== true) {
+          return updateDoc(doc(db, 'bills', d.id), {
+            isDeleted: true,
+            deletedAt,
+            originalCollection: 'bills'
+          });
+        }
+        return Promise.resolve();
+      }));
 
-      // 2. Delete customBills
+      // 2. Soft-delete customBills (move to Recycle Bin)
       const customBillsSnap = await getDocs(collection(db, 'customBills'));
-      await Promise.all(customBillsSnap.docs.map(d => deleteDoc(doc(db, 'customBills', d.id))));
+      await Promise.all(customBillsSnap.docs.map(d => {
+        if (d.data().isDeleted !== true) {
+          return updateDoc(doc(db, 'customBills', d.id), {
+            isDeleted: true,
+            deletedAt,
+            originalCollection: 'customBills'
+          });
+        }
+        return Promise.resolve();
+      }));
 
-      // 3. Delete customers
+      // 3. Soft-delete customers (move to Recycle Bin)
       const customersSnap = await getDocs(collection(db, 'customers'));
-      await Promise.all(customersSnap.docs.map(d => deleteDoc(doc(db, 'customers', d.id))));
+      await Promise.all(customersSnap.docs.map(d => {
+        if (d.data().isDeleted !== true) {
+          return updateDoc(doc(db, 'customers', d.id), {
+            isDeleted: true,
+            deletedAt,
+            originalCollection: 'customers'
+          });
+        }
+        return Promise.resolve();
+      }));
 
-      // 4. Delete products
+      // 4. Soft-delete suppliers (move to Recycle Bin)
+      const suppliersSnap = await getDocs(collection(db, 'suppliers'));
+      await Promise.all(suppliersSnap.docs.map(d => {
+        if (d.data().isDeleted !== true) {
+          return updateDoc(doc(db, 'suppliers', d.id), {
+            isDeleted: true,
+            deletedAt,
+            originalCollection: 'suppliers'
+          });
+        }
+        return Promise.resolve();
+      }));
+
+      // 5. Permanently delete products (no recycle bin support)
       const productsSnap = await getDocs(collection(db, 'products'));
       await Promise.all(productsSnap.docs.map(d => deleteDoc(doc(db, 'products', d.id))));
 
-      // 5. Delete suppliers
-      const suppliersSnap = await getDocs(collection(db, 'suppliers'));
-      await Promise.all(suppliersSnap.docs.map(d => deleteDoc(doc(db, 'suppliers', d.id))));
-
-      // 6. Delete purchases
+      // 6. Permanently delete purchases
       const purchasesSnap = await getDocs(collection(db, 'purchases'));
       await Promise.all(purchasesSnap.docs.map(d => deleteDoc(doc(db, 'purchases', d.id))));
 
-      // 7. Delete payments
+      // 7. Permanently delete payments
       const paymentsSnap = await getDocs(collection(db, 'payments'));
       await Promise.all(paymentsSnap.docs.map(d => deleteDoc(doc(db, 'payments', d.id))));
 
-      // 8. Reset bill counter in shop settings
+      // 8. Permanently delete inquiries
+      const inquiriesSnap = await getDocs(collection(db, 'inquiries'));
+      await Promise.all(inquiriesSnap.docs.map(d => deleteDoc(doc(db, 'inquiries', d.id))));
+
+      // 9. Permanently delete activity logs
+      const logsSnap = await getDocs(collection(db, 'activityLogs'));
+      await Promise.all(logsSnap.docs.map(d => deleteDoc(doc(db, 'activityLogs', d.id))));
+
+      // 10. Reset bill counter in shop settings
       const settingsRef = doc(db, 'settings', 'shop');
       await updateDoc(settingsRef, { billCounter: 0 });
       setSettings(prev => ({ ...prev, billCounter: 0 }));
       const newSettingsLocal = { ...settings, billCounter: 0 };
       localStorage.setItem('shopSettings', JSON.stringify(newSettingsLocal));
 
-      // 9. Reset invoice counter sequence document
+      // 11. Reset invoice counter sequence document
       const counterRef = doc(db, 'settings', 'invoiceCounter');
       await setDoc(counterRef, { lastInvoiceNumber: 0 }, { merge: true });
 
