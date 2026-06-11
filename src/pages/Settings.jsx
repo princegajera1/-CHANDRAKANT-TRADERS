@@ -516,36 +516,7 @@ const Settings = () => {
         </button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-        {/* Navigation Sidebar */}
-        <div className="lg:col-span-1 space-y-2 animate-dropdown-entrance">
-          {[
-            { id: 'shop', icon: Store, label: 'Shop Configuration' },
-            { id: 'digital', icon: Globe, label: 'Digital Matrix' },
-            { id: 'whatsapp', icon: MessageSquare, label: 'WhatsApp Automation' },
-            { id: 'alerts', icon: Bell, label: 'Alert Protocols' },
-            { id: 'security', icon: Shield, label: 'Security Grid' },
-            { id: 'admins', icon: Users, label: 'Admin Network' },
-            isSuperAdmin && { id: 'logs', icon: History, label: 'Activity Logs' },
-            { id: 'data', icon: Database, label: 'Data Registry' }
-          ].filter(Boolean).map((item) => (
-            <button 
-              key={item.id}
-              onClick={() => setActiveTab(item.id)}
-              className={`w-full p-5 rounded-2xl flex items-center gap-4 transition-all border duration-300 ${
-                activeTab === item.id 
-                  ? 'bg-[#FF6A00] text-white border-[#FF6A00]/50 shadow-lg shadow-[#FF6A0022]' 
-                  : 'bg-[#0D1220] border-white/[0.05] text-white/30 hover:text-white/60 hover:border-white/10'
-              }`}
-            >
-              <item.icon size={18} />
-              <span className="font-body font-[600] text-[0.78rem] uppercase tracking-[0.12em]">{item.label}</span>
-            </button>
-          ))}
-        </div>
-
-        {/* Content Area */}
-        <div className="lg:col-span-3 space-y-8 animate-page-entrance" style={{ animationDelay: '0.2s' }}>
+      <div className="w-full space-y-8 animate-page-entrance" style={{ animationDelay: '0.2s' }}>
           {activeTab === 'shop' && (
             <div className="p-10 rounded-[32px] bg-[#0D1220] border border-white/[0.05] space-y-10">
               
@@ -1277,7 +1248,6 @@ const Settings = () => {
               </div>
             </div>
           )}
-        </div>
       </div>
 
       <Modal isOpen={isAdminModalOpen} onClose={() => setIsAdminModalOpen(false)} title="Enlist New Admin">

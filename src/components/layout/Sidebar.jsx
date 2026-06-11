@@ -64,6 +64,7 @@ export const Sidebar = ({ isOpen, onClose, isCollapsed, setIsCollapsed }) => {
   const gridNavigation = [
     { icon: Home, label: 'Shop Profile', path: '/settings?tab=shop', roles: ['owner', 'superadmin', 'admin', 'manager'] },
     { icon: Globe, label: 'Digital Matrix', path: '/settings?tab=digital', roles: ['owner', 'superadmin', 'admin', 'manager'] },
+    { icon: MessageSquare, label: 'WhatsApp Automation', path: '/settings?tab=whatsapp', roles: ['owner', 'superadmin', 'admin', 'manager'] },
     { icon: Bell, label: 'Alert Protocols', path: '/settings?tab=alerts', roles: ['owner', 'superadmin', 'admin', 'manager'] },
     { icon: Shield, label: 'Security Grid', path: '/settings?tab=security', roles: ['owner', 'superadmin', 'admin', 'manager'] },
     { icon: ShieldCheck, label: 'Admin Network', path: '/users', roles: ['owner', 'superadmin'] },
