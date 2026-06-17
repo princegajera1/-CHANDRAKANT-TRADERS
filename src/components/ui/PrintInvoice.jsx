@@ -245,9 +245,15 @@ export const PrintInvoice = ({ bill, shopSettings, safeFormatDate, amountToWords
                 <div className="flex-1 p-2 border-b border-black text-[10.5px]">
                   <table className="w-full">
                     <tbody>
+                      {bill.discountAmount > 0 ? (
+                        <tr>
+                          <td>Discount:</td>
+                          <td className="text-right">₹{formatIndianNumber(bill.discountAmount)}</td>
+                        </tr>
+                      ) : null}
                       <tr>
                         <td>Taxable Amount:</td>
-                        <td className="text-right">₹{formatIndianNumber(bill.subtotal - (bill.discountAmount || 0) - (bill.customerGstin ? bill.gstAmount : 0))}</td>
+                        <td className="text-right">₹{formatIndianNumber(bill.grandTotal - (bill.customerGstin ? bill.gstAmount : 0))}</td>
                       </tr>
                       {bill.customerGstin ? (
                         <>
@@ -263,7 +269,7 @@ export const PrintInvoice = ({ bill, shopSettings, safeFormatDate, amountToWords
                       ) : null}
                       <tr>
                         <td>Round Off:</td>
-                        <td className="text-right">₹{formatIndianNumber(bill.roundOff !== undefined ? bill.roundOff : (bill.grandTotal - (bill.subtotal - (bill.discountAmount || 0) + (bill.customerGstin ? 0 : bill.gstAmount))))}</td>
+                        <td className="text-right">₹{formatIndianNumber(bill.roundOff !== undefined ? bill.roundOff : 0)}</td>
                       </tr>
                     </tbody>
                   </table>

@@ -467,11 +467,11 @@ const Bills = () => {
                 <>
                   <div className="flex justify-between mb-3">
                     <span className="text-[0.7rem] font-heading font-black text-text-muted uppercase tracking-widest">CGST (9%)</span>
-                    <span className="text-[0.9rem] font-mono font-black text-white/70">₹{(selectedBill.subtotal * 0.09)?.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                    <span className="text-[0.9rem] font-mono font-black text-white/70">₹{((selectedBill.gstAmount || 0) / 2)?.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                   </div>
                   <div className="flex justify-between mb-3">
                     <span className="text-[0.7rem] font-heading font-black text-text-muted uppercase tracking-widest">SGST (9%)</span>
-                    <span className="text-[0.9rem] font-mono font-black text-white/70">₹{(selectedBill.subtotal * 0.09)?.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                    <span className="text-[0.9rem] font-mono font-black text-white/70">₹{((selectedBill.gstAmount || 0) / 2)?.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                   </div>
                 </>
               )}

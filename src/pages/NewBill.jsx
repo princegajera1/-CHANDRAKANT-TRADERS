@@ -269,7 +269,7 @@ const NewBill = () => {
   const calculatedGrandTotal = Math.round(subtotal - calculatedDiscount);
   const grandTotal = overrideGrandTotal !== null ? (parseFloat(overrideGrandTotal) || 0) : calculatedGrandTotal;
   const discountAmount = overrideGrandTotal !== null ? (subtotal - grandTotal) : calculatedDiscount;
-  const gstAmount = isGstRegistered ? subtotal * 0.18 : 0;
+  const gstAmount = isGstRegistered ? (grandTotal - (grandTotal / 1.18)) : 0;
   const roundOff = overrideGrandTotal !== null ? 0 : (calculatedGrandTotal - (subtotal - calculatedDiscount));
   const balanceDue = Math.max(0, grandTotal - (parseFloat(amountPaid) || 0));
 
@@ -766,11 +766,11 @@ const NewBill = () => {
                 <>
                   <div className="flex justify-between items-center mt-2">
                     <span className="font-body font-[400] text-[0.78rem] text-text-muted lowercase first-letter:uppercase">CGST (9%)</span>
-                    <span className="font-mono font-[600] text-[0.82rem] text-white">₹{(subtotal * 0.09).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                    <span className="font-mono font-[600] text-[0.82rem] text-white">₹{(gstAmount / 2).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                   </div>
                   <div className="flex justify-between items-center mt-2">
                     <span className="font-body font-[400] text-[0.78rem] text-text-muted lowercase first-letter:uppercase">SGST (9%)</span>
-                    <span className="font-mono font-[600] text-[0.82rem] text-white">₹{(subtotal * 0.09).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                    <span className="font-mono font-[600] text-[0.82rem] text-white">₹{(gstAmount / 2).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                   </div>
                   <div className="flex justify-between items-center py-4 border-y border-border/30">
                     <span className="font-body font-[400] text-[0.78rem] text-accent-gold lowercase first-letter:uppercase">Discount (18% absorption)</span>

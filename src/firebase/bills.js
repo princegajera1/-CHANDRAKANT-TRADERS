@@ -227,11 +227,13 @@ export const updateBill = async (billId, newGrandTotal, newAmountPaid) => {
     }
     
     // Update the bill document
+    const isGstRegistered = !!billData.customerGstin;
     transaction.update(billRef, {
       grandTotal: newGrandTotal,
       amountPaid: newAmountPaid,
       balanceDue: newBalanceDue,
       discountAmount: Number(discountAmount),
+      gstAmount: isGstRegistered ? newGrandTotal - (newGrandTotal / 1.18) : 0,
       roundOff: 0
     });
   });
